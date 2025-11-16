@@ -1,0 +1,35 @@
+{
+  "name": "popfix",
+  "description": "Aplicación para ver películas",
+  "private": true,
+  "license": "UNLICENSED",
+  "version": "0.0.1",
+  "type": "module",
+  "author": "",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "format": "prettier --write ./src/**/*.{ts,tsx,js,jsx,scss,json}"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "prettier": "^2.8.4",
+    "sass": "^1.58.3",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
+  },
+  "packageManager": "pnpm@9.7.1",
+  "engines": {
+    "node": "^20.15.0",
+    "pnpm": "^9.7.0"
+  }
+}

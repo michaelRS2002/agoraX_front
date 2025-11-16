@@ -1,0 +1,176 @@
+// Dark theme variables (match Register view)
+$primary-bg: #0d1117;
+$card-bg: #242836;
+$textfield-bg: #1A1D2E;
+$button-blue: #3B82F6;
+$title-color: #FFFFFF;
+$subtitle-color: #C3C3C3;
+$textfield-text: #8D8D8D;
+$radius-sm: 8px;
+$radius-md: 12px;
+$shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
+
+/* Control scroll: hide on larger screens, allow on small screens (mobile) */
+/* Ensure full-height layout only for the app root (no global overflow side-effects).
+   Scroll locking is applied via a `body.no-scroll` class from the component when needed. */
+html, body, #root {
+  height: 100%;
+}
+
+/* When a component needs to hide the page scrollbar, it should add `no-scroll` to <body>.
+   This avoids leaking global overflow rules to other pages like Register. */
+body.no-scroll {
+  overflow: hidden;
+}
+
+// Focus Visible - WCAG (AA)
+*:focus-visible { outline: 3px solid rgba(59,130,246,0.15); outline-offset: 2px; }
+// =====================================================
+
+.back-arrow-login {
+  display: inline-block;
+  position: absolute;
+  top: 18%;
+  left: 8%;
+  font-size: 1.25rem;
+  color: $title-color;
+  background: rgba(255,255,255,0.03);
+  border-radius: 50%;
+  width: 3.4rem;
+  height: 3.4rem;
+  line-height: 3.4rem;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.35);
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  z-index: 30;
+
+  &:hover { background: rgba(255,255,255,0.06); }
+}
+
+.app-container {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: "Poppins", sans-serif;
+  color: $title-color;
+  background-color: $primary-bg;
+  min-height: 100vh;
+  padding: 0.1rem;
+  @media (max-width: 768px) { flex-direction: column; }
+}
+
+.login-box {
+  background: $card-bg;
+  border-radius: $radius-md;
+  padding: 2.25rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+  box-shadow: $shadow-soft;
+  position: relative;
+
+  h2 { margin: 0 0 6px 0; color: $title-color; font-size: 1.05rem; }
+  p { margin: 0 0 14px 0; color: $subtitle-color; font-size: 0.95rem; }
+}
+
+.login-form {
+  display:flex; flex-direction:column; gap:0.6rem;
+  label { font-weight:700; color:$title-color; margin:0 0 6px 0; }
+
+  .field { display:flex; flex-direction:column; gap:6px;
+    .field-inner { position:relative; display:block; width:100%; }
+    .field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; pointer-events:none; }
+    .input { width:100%; padding:0.72rem 0.9rem; padding-left:44px; height:44px; background:$textfield-bg; color:$title-color; caret-color:$title-color; border:1px solid rgba(255,255,255,0.03); border-radius:$radius-sm; font-size:0.9rem; outline:none; -webkit-appearance:none; appearance:none; box-sizing:border-box; }
+    .input::placeholder { color:$textfield-text; }
+  }
+
+  .button { margin-top:0.6rem; background:$button-blue; color:$title-color; border:none; border-radius:$radius-sm; padding:0.85rem 1rem; font-size:0.94rem; font-weight:600; cursor:pointer; width:100%; text-align:center; }
+  .button:disabled { opacity:0.6; cursor:not-allowed; }
+}
+
+.forgot {
+  display: block;
+  margin-top: 8px;
+  color: $button-blue;
+  text-decoration: none;
+  font-weight: 600;
+  width: 100%;
+  text-align: right; /* align the link to the right inside the card */
+}
+
+.register-text { margin-top:1rem; color:$subtitle-color; text-align:center; }
+
+.card-header-icon { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin: -36px auto 12px; box-shadow:0 8px 24px rgba(11,20,40,0.45); background:$button-blue; z-index:30; }
+.card-header-image { width:36px; height:36px; display:block; object-fit:cover; }
+
+.register-text {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: $subtitle-color;
+
+  .to-register-link {
+    font-weight: 600;
+    text-decoration: none;
+    color: $button-blue;
+
+    &:hover {
+      color: #333;
+      text-decoration: underline;
+    }
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .login-box {
+    width: 95%;
+    padding: 1.5rem;
+  }
+}
+
+/* Social sign-in buttons */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 10px 0;
+  color: $subtitle-color;
+  font-size: 0.9rem;
+}
+.social-divider::before,
+.social-divider::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  flex: 1 1 auto;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.7rem 0.9rem;
+  border-radius: $radius-sm;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: $title-color;
+  font-weight: 600;
+  cursor: pointer;
+  justify-content: center;
+
+}
+.social-btn img { width: 22px; height: 22px; display: block; }
+.social-btn.google-btn { background: transparent; }
+.social-btn.github-btn { background: transparent;  }
+
+.social-btn:hover { box-shadow: 0 6px 18px rgba(2,6,23,0.25); }

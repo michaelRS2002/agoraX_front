@@ -1,0 +1,605 @@
+@use "sass:color";
+
+// Paleta de colores clara
+$color-bg: #FEFEFE;
+$color-box: #FEFEFE;
+$color-input: #F4F4F4;
+$color-input-text: #222130;
+$color-label: #222130;
+$color-text: #222130;
+$color-border: #D9D9D9;
+$color-accent: #FF0000;
+
+.MovieScreen {
+  min-height: 100vh;
+  color: $color-text;
+  padding-bottom: 2rem;
+
+  // Focus Visible - WCAG (AA)
+  *:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+  }
+
+  button:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.2);
+  }
+
+  .favorite-button:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    transform: scale(1.1);
+  }
+
+  .star:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    transform: scale(1.2);
+  }
+
+  textarea:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.2);
+  }
+
+  .comment-submit-btn:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.2);
+  }
+
+  video:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 4px;
+  }
+  // =====================================================
+}
+
+.movie-container {
+  background-color: $color-bg;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2rem;
+}
+
+.movie-content {
+  display: contents;
+}
+
+// Comments Section
+.comments-section {
+  background: $color-box;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid $color-border;
+  grid-column: 1;
+  grid-row: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+// Video Section
+.video-section {
+  background: $color-box;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  border: 1px solid $color-border;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.video-player {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  background: #000000;
+
+  video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.video-controls-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+
+  .video-player:hover & {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.play-button-overlay {
+  background: rgba(254, 254, 254, 0.95);
+  border: none;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #222130;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #FEFEFE;
+    transform: scale(1.1);
+  }
+}
+
+.video-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 10;
+}
+
+// Subtitle Control
+.subtitle-control {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+}
+
+.subtitle-btn {
+  background: rgba(254, 254, 254, 0.9);
+  border: none;
+  border-radius: 8px;
+  color: #222130;
+  padding: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  &:hover {
+    background: #FEFEFE;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  &.active {
+    background: $color-accent;
+    color: #FEFEFE;
+
+    &:hover {
+      background: #cc0000;
+    }
+  }
+
+  svg {
+    font-size: 1.25rem;
+  }
+}
+
+.control-btn {
+  background: rgba(254, 254, 254, 0.9);
+  border: none;
+  border-radius: 8px;
+  color: #222130;
+  padding: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  &:hover {
+    background: #FEFEFE;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  svg {
+    font-size: 1.25rem;
+  }
+}
+
+// Movie Info Section
+.movie-info-section {
+  background: $color-box;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid $color-border;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.movie-header {
+  display: flex;
+  justify-content: space-between;
+  /* Align title and actions vertically centered so the rating badge sits at the right of the header */
+  align-items: center;
+  gap: 1rem;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    color: $color-label;
+  }
+}
+
+.movie-rating-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: $color-accent;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+
+  svg {
+    color: $color-accent;
+  }
+}
+
+.movie-meta {
+  display: flex;
+  gap: 1.5rem;
+  color: $color-text;
+  font-size: 0.95rem;
+
+  span {
+    display: flex;
+    align-items: center;
+  }
+}
+
+  .movie-genre {
+    .genre-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem; // smaller padding to read as a label
+      background: $color-box; // keep contrast on dark backgrounds
+      border-radius: 0px; // remove the pill-shaped rounding
+      font-size: 1rem;
+      color: $color-input-text;
+      margin-inline-end: auto;
+      border: none; // remove border so it looks like a label
+      font-weight: 400; // normal weight for label-like appearance
+      box-shadow: none;
+      cursor: default;
+    }
+  }
+
+.movie-director {
+  color: $color-text;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.movie-description {
+  color: $color-text;
+  line-height: 1.6;
+  margin: 0;
+}
+
+// User Rating
+.user-rating {
+  border-top: 1px solid $color-border;
+  padding-top: 1.5rem;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: $color-label;
+  }
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.5rem;
+
+  .star {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: all 0.3s ease;
+    color: $color-border;
+
+    svg {
+      font-size: 1.75rem;
+    }
+
+    &.active {
+      color: $color-accent;
+    }
+
+    &:hover {
+      transform: scale(1.15);
+      color: $color-accent;
+    }
+  }
+}
+
+// Comments Section
+.comments-section {
+  background: $color-box;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid $color-input;
+}
+
+.comments-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: nowrap; // prevent the badge from wrapping below the title
+  /* Ensure positioned children are placed relative to this header and
+     appear above other absolute elements (video overlays, etc.). */
+  position: relative;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: $color-label;
+
+    svg {
+      color: $color-accent;
+    }
+  }
+
+  .movie-rating-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: $color-accent;
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: transparent;
+    svg { color: $color-accent; }
+    margin-left: auto;
+    flex-shrink: 0; // ensure it doesn't shrink and drop to next line
+    /* Keep badge above absolute-positioned overlays and ensure it participates in layout */
+    position: relative;
+    z-index: 50;
+  }
+}
+
+.comment-input-box {
+  background: $color-input;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid $color-border;
+
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: $color-input-text;
+
+    &::placeholder {
+      color: #999999;
+    }
+  }
+}
+
+.comment-submit-btn {
+  background: $color-accent;
+  color: #FEFEFE;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  margin-left: auto;
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.2);
+
+  &:hover:not(:disabled) {
+    background: #cc0000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.comment-separator {
+  width: 100%;
+  height: 1px;
+  background: $color-accent;
+  margin-bottom: 1.5rem;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.comment-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: $color-input;
+  border-radius: 12px;
+  border: 1px solid $color-border;
+}
+
+.comment-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: $color-accent;
+  color: $color-input-text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: $color-label;
+}
+
+.comment-date {
+  font-size: 0.875rem;
+  color: #999999;
+}
+
+.comment-text {
+  margin: 0;
+  color: $color-text;
+  line-height: 1.5;
+}
+
+.movie-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Ensure the rating badge stays to the right of the header and doesn't overlap other sections */
+
+
+@media (max-width: 900px) {
+  /* On narrower screens make sure header elements wrap nicely and rating stays visible on the right */
+  .movie-header {
+    align-items: center;
+  }
+  .movie-actions {
+    gap: 0.5rem;
+  }
+}
+
+.favorite-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  line-height: 1;
+  padding: 0.5rem;
+  margin: 0;
+  outline: none;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:hover {
+    transform: scale(1.15);
+  }
+
+  svg {
+    width: 28px;
+    height: 28px;
+    color: $color-text;
+  }
+
+  &.is-favorite {
+    svg {
+      color: $color-accent;
+      fill: $color-accent;
+    }
+  }
+}
+
+// Toast Notification
+.toast {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  &.toast-success {
+    background: #10b981;
+    color: #ffffff;
+  }
+
+  &.toast-error {
+    background: $color-accent;
+    color: #ffffff;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
