@@ -109,13 +109,14 @@ const ForgotPassword: React.FC = (): JSX.Element => {
               className="back-arrow-forgot"
               aria-label="Volver a la página de inicio de sesión"
             >
-              <span aria-hidden="true">←</span>
+              <span className="back-arrow-symbol" aria-hidden>
+                ←
+              </span>
+              <span className="back-arrow-text">Volver</span>
             </Link>
-            <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
-              className="icon"
-            />
+            <div className="card-header-icon" aria-hidden>
+              <img src="/images/icon-mail-white.svg" alt="Icono de correo" className="card-header-image" />
+            </div>
             <h2>Recuperar contraseña</h2>
             <p>Ingresa el correo para recuperar tu contraseña</p>
 
