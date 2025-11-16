@@ -1,0 +1,515 @@
+$navbar-bg: #ffffff;
+$navbar-text: #000000;
+$navbar-border: #e5e5e5;
+$navbar-shadow: rgba(0, 0, 0, 0.08);
+$navbar-shadow-light: #f5f5f5;
+$navbar-link-hover: #f5f5f5;
+$navbar-link-active: #e5e5e5;
+$navbar-btn-bg: #ffffff;
+$navbar-btn-border: #e5e5e5;
+$navbar-btn-border-hover: #cccccc;
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $navbar-bg;
+  color: $navbar-text;
+  padding: 1rem 2rem;
+  font-family: "Poppins", sans-serif;
+  border-bottom: 1px solid $navbar-border;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  width: 100%;
+
+  @media (max-width: 768px) {
+    padding: 1rem 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+/* make navbar sticky on top for better mobile UX */
+.navbar--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 2rem;
+
+  @media (max-width: 768px) {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+// Logo
+.navbar-logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ff0000;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-logo {
+    font-size: 1.25rem;
+  }
+}
+
+// Desktop Navigation
+.navbar-desktop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  width: 100%;
+
+  .navbar-links {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .navbar-search {
+    margin-left: auto;
+    
+    // Cuando hay search, el actions necesita menos margen
+    ~ .navbar-actions {
+      margin-left: 1rem;
+      margin-right: 3.7rem;
+    }
+  }
+
+  .navbar-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-right: 3.7rem;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+/* At medium widths, avoid absolute centering which can overlap with other elements */
+@media (max-width: 1024px) {
+  .navbar-desktop .navbar-links {
+    position: static;
+    transform: none;
+    margin-left: 0.5rem;
+    justify-content: flex-start;
+  }
+}
+
+// Links List
+.navbar-links {
+  display: flex;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  .nav-link {
+    background: none;
+    border: none;
+    color: $navbar-text;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: $navbar-link-hover;
+      color: #ff0000;
+    }
+  }
+}
+
+// Search Bar
+.navbar-search {
+  flex: 1;
+  max-width: 350px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border-radius: 30px;
+  padding: 0.6rem 1rem;
+  border: 1px solid $navbar-btn-border;
+  transition: all 0.2s;
+
+  &:focus-within {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+  }
+
+  .navbar-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: $navbar-text;
+    font-size: 0.95rem;
+    padding-left: 0.5rem;
+
+    &::placeholder {
+      color: #aaa;
+    }
+  }
+
+  .navbar-search-icon {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    order: -1;
+
+    &:hover {
+      color: #ff0000;
+    }
+  }
+}
+
+/* hide desktop search on small screens to avoid duplication with mobile search */
+@media (max-width: 768px) {
+  .navbar-search {
+    display: none;
+    max-width: none;
+    flex: none;
+  }
+}
+
+// Profile Menu
+.navbar-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.navbar-user-icon {
+  background: $navbar-btn-bg;
+  border: 1px solid $navbar-btn-border;
+  border-radius: 10px;
+  padding: 0.6rem;
+  color: $navbar-text;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: $navbar-link-hover;
+    border-color: $navbar-btn-border-hover;
+    color: #ff0000;
+  }
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: $navbar-bg;
+  border: 1px solid $navbar-btn-border;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  min-width: 200px;
+  padding: 0.5rem;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: $navbar-text;
+  background: none;
+  border: none;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+
+  svg {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: $navbar-link-hover;
+    color: #ff0000;
+  }
+
+  &.logout-item {
+    color: #dc2626;
+    border-top: 1px solid $navbar-btn-border;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: #ff0000;
+    }
+  }
+}
+
+// Mobile Toggle
+.navbar-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: $navbar-text;
+  padding: 0.5rem;
+  transition: color 0.2s;
+
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    order: 2;
+
+    &:hover {
+      color: #ff0000;
+    }
+  }
+}
+
+/* increase hit area for mobile toggle and ensure it sits at the right */
+@media (max-width: 480px) {
+  .navbar-mobile-toggle {
+    padding: 0.6rem;
+    font-size: 1.35rem;
+  }
+}
+
+/* Make sure the mobile toggle is always on top and visible */
+@media (max-width: 768px) {
+  .navbar-mobile-toggle {
+    position: relative;
+    z-index: 1100; /* sit above other navbar elements */
+    flex: none;
+    color: $navbar-text;
+  }
+
+  /* ensure logo doesn't push the toggle out of view */
+  .navbar-logo {
+    flex: 0 0 auto;
+    margin-right: 0.5rem;
+  }
+
+  /* container should allow items to wrap without hiding the toggle */
+  .navbar-container {
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Fix potential overflow on the right on small screens by removing large margins
+   and ensuring the toggle is pushed inside the container */
+@media (max-width: 768px) {
+  .navbar {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .navbar-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Remove desktop-specific side margins that can push content out */
+  .navbar-actions {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* Make the toggle align to the right within the flex container */
+  .navbar-mobile-toggle {
+    margin-left: auto;
+  }
+}
+
+// Mobile Navigation
+.navbar-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: $navbar-bg;
+  border-top: 1px solid $navbar-btn-border;
+  animation: slideDown 0.3s ease-out;
+  width: 100%;
+  order: 3;
+
+  @media (max-width: 768px) {
+    display: flex;
+  }
+
+  .mobile-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    .mobile-link {
+      background: none;
+      border: none;
+      color: $navbar-text;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+      text-align: left;
+      width: 100%;
+
+      &:hover {
+        background: $navbar-link-hover;
+        color: #ff0000;
+      }
+    }
+  }
+
+  .mobile-search {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border-radius: 20px;
+    padding: 0.6rem 1rem;
+    border: 1px solid $navbar-btn-border;
+    gap: 0.5rem;
+
+    &:focus-within {
+      border-color: #ff0000;
+      box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+    }
+  }
+
+  .mobile-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: $navbar-text;
+    font-size: 0.95rem;
+
+    &::placeholder {
+      color: #aaa;
+    }
+  }
+
+  .mobile-search-icon {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    order: -1;
+
+    &:hover {
+      color: #ff0000;
+    }
+  }
+
+  .mobile-profile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid $navbar-btn-border;
+
+    .mobile-profile-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: $navbar-text;
+      background: none;
+      border: none;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+
+      svg {
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        background: $navbar-link-hover;
+        color: #ff0000;
+      }
+
+      &.logout-item {
+        color: #dc2626;
+
+        &:hover {
+          background: rgba(220, 38, 38, 0.1);
+          color: #ff0000;
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

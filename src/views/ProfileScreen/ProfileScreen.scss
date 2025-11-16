@@ -1,0 +1,581 @@
+.ProfileScreen {
+  min-height: 100vh;
+  height: 100vh;
+  background: #f4f4f4;
+  overflow: hidden;
+  display: flex;
+}
+
+.profile-container {
+  width: 100%;
+  height: 100vh;
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+// Header Section
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  .back-button,
+  .edit-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: #fefefe;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    color: #222130;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background: #f4f4f4;
+      border-color: #222130;
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Main Content Layout
+.profile-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+// Profile Info Card
+.profile-info-card {
+  background: #fefefe;
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 2px 8px rgba(34, 33, 48, 0.06);
+}
+
+.profile-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: #222130;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 70px;
+    height: 70px;
+    color: #fefefe;
+    stroke-width: 1.5;
+  }
+}
+
+.profile-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #222130;
+    margin: 0 0 0.5rem 0;
+  }
+}
+
+.profile-bio {
+  color: #222130;
+  opacity: 0.6;
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.5;
+}
+
+// Stats Section - Horizontal Row
+.profile-stats {
+  display: flex;
+  flex-direction: row;
+  gap: 3.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+
+  svg {
+    width: 24px;
+    height: 24px;
+    color: #222130;
+    flex-shrink: 0;
+    margin-bottom: 0.15rem;
+    stroke-width: 0.5;
+  }
+
+  // CiHeart rojo
+  &.stat-favorites svg {
+    color: #ff0000;
+    stroke-width: 1;
+  }
+
+  // CiStar amarillo
+  &.stat-rating svg {
+    color: #ffd700;
+    stroke-width: 1;
+  }
+
+  &.favorite-genre {
+    svg {
+      color: #222130;
+    }
+  }
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: center;
+
+  .stat-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #222130;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #222130;
+    opacity: 0.6;
+    white-space: nowrap;
+    text-align: center;
+  }
+}
+
+// Content Wrapper
+.profile-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+// Right Side Content
+.profile-right-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// Tabs Section
+.profile-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  background: #d9d9d9;
+  border: none;
+  border-radius: 50px;
+  padding: 0.25rem;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 50px;
+  color: #222130;
+  opacity: 0.7;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.active {
+    background: #fefefe;
+    color: #222130;
+    opacity: 1;
+    box-shadow: 0 2px 4px rgba(34, 33, 48, 0.1);
+  }
+}
+
+// Content Section
+.profile-content {
+  background: #fefefe;
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(34, 33, 48, 0.06);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(34, 33, 48, 0.06);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+// Favorites Section
+.favorites-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f4f4f4;
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      color: #ff0000;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #222130;
+      margin: 0;
+    }
+
+    p {
+      color: #222130;
+      opacity: 0.7;
+      font-size: 0.95rem;
+      margin: 0.25rem 0 0 0;
+    }
+  }
+}
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2rem;
+}
+
+.movie-card-profile {
+  background: #fefefe;
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(34, 33, 48, 0.12);
+    border-color: #222130;
+  }
+}
+
+.movie-poster {
+  position: relative;
+  width: 100%;
+  padding-top: 150%;
+  background: #d9d9d9;
+  overflow: hidden;
+
+  img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.movie-rating-badge {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(254, 254, 254, 0.95);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  svg {
+    width: 16px;
+    height: 16px;
+
+    &.filled {
+      color: #ff0000;
+    }
+
+    &.empty {
+      color: #d9d9d9;
+    }
+  }
+}
+
+.movie-info {
+  padding: 1.25rem;
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .movie-genre {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    background: #f4f4f4;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #222130;
+    margin-bottom: 0.75rem;
+  }
+
+  .movie-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .movie-duration {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      color: #222130;
+      opacity: 0.7;
+      font-size: 0.875rem;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .movie-added {
+    color: #222130;
+    opacity: 0.5;
+    font-size: 0.8rem;
+    margin: 0;
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  svg {
+    width: 80px;
+    height: 80px;
+    color: #d9d9d9;
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #222130;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: #222130;
+    opacity: 0.7;
+    font-size: 1rem;
+    margin: 0;
+    max-width: 400px;
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .profile-main-content {
+    flex-direction: column;
+  }
+
+  .profile-info-card {
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .profile-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    flex: 1 1 calc(50% - 0.75rem);
+    min-width: 140px;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1rem;
+  }
+
+  .ProfileScreen {
+    height: auto;
+    overflow: auto;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+
+    .back-button,
+    .edit-button {
+      justify-content: center;
+    }
+  }
+
+  .profile-info-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+
+    svg {
+      width: 50px;
+      height: 50px;
+    }
+  }
+
+  .profile-details h1 {
+    font-size: 1.25rem;
+  }
+
+  .profile-stats {
+    flex-direction: column;
+  }
+
+  .stat-item {
+    width: 100%;
+  }
+
+  .profile-tabs {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tab-button {
+    flex: 1 1 calc(50% - 0.5rem);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .profile-content {
+    padding: 1.5rem;
+    overflow-y: visible;
+  }
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .favorites-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-info-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .profile-stats {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .stat-item {
+    width: 100%;
+  }
+
+  .tab-button {
+    flex: 1 1 100%;
+  }
+
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+button:focus-visible,
+.tab-button:focus-visible,
+.movie-card:focus-visible {
+  outline: 3px solid #222130;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(34, 33, 48, 0.1);
+}
+
+.back-button:focus-visible,
+.edit-button:focus-visible {
+  outline: 3px solid #222130;
+  outline-offset: 2px;
+}
