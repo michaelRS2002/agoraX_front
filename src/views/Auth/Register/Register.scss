@@ -1,0 +1,212 @@
+// Color variables (kept exactly from the prototype)
+$primary-bg: #0D1117;
+$card-bg: #242836;
+$textfield-bg: #1A1D2E;
+$button-blue: #3B82F6;
+$button-red: #FF0000;
+$title-color: #FFFFFF;
+$subtitle-color: #C3C3C3;
+$textfield-text: #8D8D8D;
+$navbar-footer: #1D232F;
+$radius-sm: 8px;
+$radius-md: 12px;
+$shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
+// Popup styles (success / error)
+.popup-message {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.98);
+  min-width: 260px;
+  max-width: 92vw;
+  z-index: 9999;
+  padding: 1rem 1.25rem;
+  border-radius: $radius-md;
+  font-size: 0.98rem;
+  color: $title-color;
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: $shadow-soft;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s, transform 0.22s;
+  text-align: left;
+}
+.popup-show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1);
+}
+.popup-success { background: rgba(59, 130, 246, 0.15); }
+.popup-error { background: rgba(255, 0, 0, 0.09); color: $title-color; }
+
+body { background: $primary-bg; }
+
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 420px; // matches prototype
+  background: $card-bg; // exact card color
+  border-radius: $radius-md;
+  padding: 2.5rem 1.75rem 2rem;
+  box-shadow: $shadow-soft;
+  color: $title-color;
+  position: relative;
+  text-align: center;
+  overflow: visible; // allow header icon to overflow and remain visible
+}
+
+.title { margin: 0 0 0.25rem 0; font-size: 0.94rem; color: $title-color; font-weight: 700; }
+
+/* Subtitle under the title — keep a small gap under the H1 but
+  add padding below the subtitle to create the visual separation
+  requested without a large H1 bottom margin. */
+.subtitle { margin: 0; padding-bottom: 0.9rem; color: $subtitle-color; font-size: 0.95rem; }
+
+.form-register { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.form-row { display: flex; gap: 0.9rem; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-weight: 700;
+    color: $title-color; // always white
+    font-size: 0.94rem;
+    margin: 0 0 6px 0;
+    text-align: left;
+    width: 100%;
+  }
+
+  .field-inner {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
+  .field-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $subtitle-color;
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.72rem 0.9rem;
+    padding-left: 44px;
+    height: 44px;
+    background: $textfield-bg;
+    color: $title-color;
+    caret-color: $title-color;
+    border: 1px solid rgba(255,255,255,0.03);
+    border-radius: $radius-sm;
+    font-size: 0.90rem;
+    outline: none;
+    transition: box-shadow 0.14s, border-color 0.14s;
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    max-width: 100%;
+    display: block;
+  }
+
+  /* ================================
+     AUTOFILL — que NO cambie nada
+     ================================ */
+  .input:-webkit-autofill,
+  .input:-webkit-autofill:hover,
+  .input:-webkit-autofill:focus,
+  .input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px $textfield-bg inset !important;
+    box-shadow: 0 0 0 1000px $textfield-bg inset !important;
+    -webkit-text-fill-color: $title-color !important;
+    caret-color: $title-color !important;
+    border: 1px solid rgba(255,255,255,0.03) !important;
+    transition: background-color 9999s ease-in-out 0s !important;
+  }
+}
+
+
+.button {
+  margin-top: 0.6rem;
+  background: $button-blue; // exact blue from prototype
+  color: $title-color;
+  border: none;
+  border-radius: $radius-sm;
+  padding: 0.85rem 1rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error-message {
+  color: $button-red;
+  background: rgba(255,0,0,0.04);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.register-redirect { 
+  margin-top: 0.6rem; 
+  color: $subtitle-color;
+  text-align: center; 
+}
+.to-login-link { color: $button-blue; font-weight: 600; text-decoration: none; }
+
+// Header icon overlapping the card (camera icon container in screenshot)
+.card-header-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -10px auto 8px;
+  box-shadow: 0 8px 24px rgba(11,20,40,0.45);
+  background: $button-blue; /* ensure visible even if image has transparency */
+  z-index: 30; /* keep above the card */
+}
+
+.card-header-image {
+  width: 36px;
+  height: 36px;
+  display: block;
+  object-fit: cover;
+}
+
+.register-card .title { margin-top: 4px; }
+
+/* Ensure inline images used as field icons scale to a consistent size */
+.field-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+
+@media (max-width: 720px) {
+  .register-card { padding: 1.25rem; }
+  .form-row { flex-direction: column; }
+}
+
