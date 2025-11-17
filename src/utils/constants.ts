@@ -25,7 +25,7 @@ export const API_BASE_URL = "http://localhost:5100/api";
  */
 export const API_ENDPOINTS = {
   // Autenticación
-  LOGIN: '/users/login',
+  LOGIN: '/auth/login',
   // changed to match backend auth route
   REGISTER: '/auth/register',
   FORGOT_PASSWORD: '/auth/forgot-password',
