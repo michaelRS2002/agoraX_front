@@ -1,10 +1,11 @@
 /**
  * @file SiteMap.tsx
- * @description Displays a complete sitemap for the PopFix application, allowing users to easily navigate between different sections such as main pages, user settings, and recovery options.
+ * @description Displays a complete sitemap for the AgoraX application, allowing users to easily navigate between different sections.
  * @module SiteMap
  */
 
 import React from "react";
+import { Link } from "react-router-dom";
 import "./SiteMap.scss";
 import NavBar from "../../components/NavBar/NavBar";
 
@@ -12,7 +13,7 @@ import NavBar from "../../components/NavBar/NavBar";
  * Renders the Site Map page component.
  *
  * This page provides a structured list of navigation links categorized by
- * main site sections, user-related actions, and password recovery options.
+ * main site sections, user-related actions, and conference options.
  *
  * @component
  * @example
@@ -24,70 +25,85 @@ import NavBar from "../../components/NavBar/NavBar";
  */
 const SiteMap: React.FC = () => {
   return (
-    <div className="SiteMap">
+    <div className="sitemap">
       <NavBar />
 
       <div className="sitemap-container">
-        <h1>Mapa del Sitio</h1>
-        <p className="sitemap-description">
-          Encuentra todo lo que necesitas en PopFix. Aquí está el mapa completo
-          de navegación.
-        </p>
+        <div className="sitemap-header">
+          <h1>Mapa del Sitio</h1>
+          <p className="sitemap-description">
+            Encuentra todas las funcionalidades de AgoraX. Aquí está el mapa completo de navegación.
+          </p>
+        </div>
 
-        <div className="sitemap-sections">
+        <div className="sitemap-grid">
           {/* Main Navigation Section */}
-          <div className="sitemap-section">
+          <div className="sitemap-card">
+            <div className="card-icon">🏠</div>
             <h2>Navegación Principal</h2>
             <ul>
               <li>
-                <a href="/">Inicio</a>
+                <Link to="/">Página de Bienvenida</Link>
               </li>
               <li>
-                <a href="/peliculas">Películas</a>
-              </li>
-              <li>
-                <a href="/favoritos">Favoritos</a>
-              </li>
-              <li>
-                <a href="/perfil">Perfil</a>
+                <Link to="/home">Inicio</Link>
               </li>
             </ul>
           </div>
 
           {/* User Section */}
-          <div className="sitemap-section">
+          <div className="sitemap-card">
+            <div className="card-icon">👤</div>
             <h2>Usuario</h2>
             <ul>
               <li>
-                <a href="/login">Iniciar Sesión</a>
+                <Link to="/login">Iniciar Sesión</Link>
               </li>
               <li>
-                <a href="/register">Registrarse</a>
+                <Link to="/register">Registrarse</Link>
               </li>
               <li>
-                <a href="/user">Mi Perfil</a>
+                <Link to="/user">Mi Perfil</Link>
               </li>
               <li>
-                <a href="/edit-user">Editar Perfil</a>
+                <Link to="/user/edit">Editar Perfil</Link>
               </li>
               <li>
-                <a href="">Cambiar Contraseña</a>
+                <Link to="/user/change-password">Cambiar Contraseña</Link>
               </li>
               <li>
-                <a href="">Eliminar Cuenta</a>
+                <Link to="/user/delete">Eliminar Cuenta</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Conference Section */}
+          <div className="sitemap-card">
+            <div className="card-icon">📹</div>
+            <h2>Videoconferencias</h2>
+            <ul>
+              <li>
+                <span className="disabled-link">Iniciar Reunión</span>
+              </li>
+              <li>
+                <span className="disabled-link">Unirse a Reunión</span>
+              </li>
+              <li>
+                <span className="disabled-link">Sala de Conferencia</span>
               </li>
             </ul>
           </div>
 
           {/* Recovery Section */}
-          <div className="sitemap-section">
+          <div className="sitemap-card">
+            <div className="card-icon">🔐</div>
             <h2>Recuperación</h2>
             <ul>
               <li>
-                <a href="/forgot-password">Olvidé mi Contraseña</a>
+                <Link to="/forgot-password">Olvidé mi Contraseña</Link>
               </li>
               <li>
-                <a href="">Restablecer Contraseña</a>
+                <Link to="/reset-password">Restablecer Contraseña</Link>
               </li>
             </ul>
           </div>
