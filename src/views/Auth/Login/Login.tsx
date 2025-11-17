@@ -1,10 +1,6 @@
 /**
  * @file Login.tsx
- * @description Login page component for PopFix. Handles user authentication,
- * form validation, error display, and success feedback through a popup.
- *
- * This component allows users to log in using their email and password,
- * validates inputs, and provides visual feedback during the process.
+ * @description Login page component for PopFix.
  */
 
 import React, { useState, useEffect } from "react";
@@ -24,8 +20,8 @@ const Login: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // 🔥 Importamos la función real de Google Login
-  const { loginWithGoogle } = useAuthStore();
+  // 🔥 Importamos los 2 providers del store
+  const { loginWithGoogle, loginWithGithub } = useAuthStore();
 
   useEffect(() => {
     const applyNoScroll = () => {
@@ -91,13 +87,23 @@ const Login: React.FC = () => {
     }, 3000);
   };
 
-  // ⭐⭐⭐ GOOGLE LOGIN REAL ⭐⭐⭐
+  // ⭐ GOOGLE LOGIN
   const handleGoogleLogin = async () => {
     try {
-      await loginWithGoogle(); // usa el store
+      await loginWithGoogle();
       navigate("/home");
     } catch (err) {
       console.error("Error en Google Login:", err);
+    }
+  };
+
+  // 🟣 GITHUB LOGIN (nuevo)
+  const handleGithubLogin = async () => {
+    try {
+      await loginWithGithub();
+      navigate("/home");
+    } catch (err) {
+      console.error("Error en GitHub Login:", err);
     }
   };
 
@@ -168,12 +174,7 @@ const Login: React.FC = () => {
               </span>
             )}
 
-            <button
-              type="submit"
-              className="button"
-              disabled={loading}
-              aria-label={loading ? "Iniciando sesión" : "Iniciar sesión"}
-            >
+            <button type="submit" className="button" disabled={loading}>
               {loading ? "Loading..." : "Iniciar sesión"}
             </button>
 
@@ -182,7 +183,6 @@ const Login: React.FC = () => {
                 className="error-message"
                 style={{ marginTop: 8 }}
                 role="alert"
-                aria-live="polite"
               >
                 {formError}
               </div>
@@ -198,21 +198,21 @@ const Login: React.FC = () => {
           </div>
 
           <div className="social-buttons">
-            {/* ⭐ BOTÓN GOOGLE CORREGIDO ⭐ */}
+            {/* ⭐ GOOGLE LOGIN */}
             <button
               onClick={handleGoogleLogin}
               type="button"
               className="social-btn google-btn"
-              aria-label="Continuar con Google"
             >
               <img src="/images/google.png" alt="Google" />
               <span>Continuar con Google</span>
             </button>
 
+            {/* 🟣 GITHUB LOGIN */}
             <button
+              onClick={handleGithubLogin}
               type="button"
               className="social-btn github-btn"
-              aria-label="Continuar con GitHub"
             >
               <img src="/images/github.png" alt="GitHub" />
               <span>Continuar con GitHub</span>
@@ -232,3 +232,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

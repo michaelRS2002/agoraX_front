@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { GithubAuthProvider } from "firebase/auth";
+
 
 // Firebase config desde las variables de entorno de Vite
 const firebaseConfig = {
@@ -22,4 +24,5 @@ export const auth = getAuth(app);
 
 // Proveedor de Google
 export const googleProvider = new GoogleAuthProvider();
+export const githubProvider = new GithubAuthProvider();
 

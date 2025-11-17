@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { auth, googleProvider } from "../lib/firebase.config";
+import { auth, googleProvider, githubProvider } from "../lib/firebase.config";
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -25,25 +25,27 @@ type AuthStore = {
   initFromLocalStorage: () => void;
 
   loginWithGoogle: () => Promise<void>;
+  loginWithGithub: () => Promise<void>;   // <-- GitHub
+
   logout: () => Promise<void>;
-   _observerInitialized?: boolean; 
+  _observerInitialized?: boolean;
 };
 
 const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   _observerInitialized: false,
+
   setUser: (user) => set({ user }),
 
-  // 🔵 Cargar sesión previa guardada en localStorage
+  // 🔵 Inicializar sesión desde localStorage
   initFromLocalStorage: () => {
     const savedUser = localStorage.getItem("user");
-
     if (savedUser) {
       set({ user: JSON.parse(savedUser) });
     }
   },
 
-  // 🟡 Observador de Firebase (se ejecuta 1 sola vez)
+  // 🟡 Observador de Firebase (solo 1 vez)
   initAuthObserver: () => {
     if (get()._observerInitialized) return;
 
@@ -80,7 +82,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       const fbUser = result.user;
 
       const idToken = await fbUser.getIdToken();
-
       const res = await httpClient.post("/auth/firebase-login", { idToken });
 
       const backendUser = res.user;
@@ -95,7 +96,28 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  // 🔴 Logout Total
+  // 🟣 Login con GitHub 
+  loginWithGithub: async () => {
+    try {
+      const result = await signInWithPopup(auth, githubProvider);
+      const fbUser = result.user;
+
+      const idToken = await fbUser.getIdToken();
+      const res = await httpClient.post("/auth/firebase-login", { idToken });
+
+      const backendUser = res.user;
+      const backendToken = res.token;
+
+      localStorage.setItem("authToken", backendToken);
+      localStorage.setItem("user", JSON.stringify(backendUser));
+
+      set({ user: backendUser });
+    } catch (error) {
+      console.error("Error en GitHub Login:", error);
+    }
+  },
+
+  // 🔴 Logout
   logout: async () => {
     try {
       await signOut(auth);
