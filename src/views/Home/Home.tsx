@@ -8,14 +8,14 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   const handleStartMeeting = () => {
-    // Lógica para iniciar una nueva videoconferencia
-    console.log('Iniciar videoconferencia');
+    // Generar un ID único para la reunión
+    const newRoomId = Math.random().toString(36).substring(2, 15)
+    navigate(`/conference/${newRoomId}`)
   };
 
   const handleJoinMeeting = () => {
     if (meetingId.trim()) {
-      // Lógica para unirse a una reunión
-      console.log('Unirse a reunión:', meetingId);
+      navigate(`/conference/${meetingId}`)
     }
   };
 
@@ -57,7 +57,7 @@ const Home: React.FC = () => {
         <div className="footer-content">
           <div className="footer-column">
             <ul>
-              <li><a href="#">Sobre nosotros</a></li>
+              <li><a href="/site-map">Sobre nosotros</a></li>
               <li><a href="/register">Registrarse</a></li>
               <li><a href="/login">Iniciar sesión</a></li>
             </ul>
@@ -65,8 +65,8 @@ const Home: React.FC = () => {
 
           <div className="footer-column">
             <ul>
-              <li><a href="#">Videollamada</a></li>
-              <li><a href="#">Perfil</a></li>
+              <li><a href="/conference">Videollamada</a></li>
+              <li><a href="/perfil">Perfil</a></li>
             </ul>
           </div>
         </div>
