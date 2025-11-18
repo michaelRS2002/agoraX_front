@@ -126,23 +126,22 @@ export const resetPassword = async (payload: {
 };
 
 /**
- * Logs out the current user by calling the API and clearing localStorage.
+ * Logs out the current user by calling the API and clearing browser storage.
  * @async
- * @returns {Promise<any>} The response from the API.
- * @throws {Error} If logout fails.
+ * @returns {Promise<void>}
  */
-export const logoutUser = async (): Promise<any> => {
+export const logoutUser = async (): Promise<void> => {
   try {
-    const response = await httpClient.post("/users/logout", {});
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    return response;
-  } catch (error: any) {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    throw new Error("Error logging out: " + (error.message || ""));
+    await httpClient.post("/auth/logout", {});
+  } catch (error) {
+    console.warn("Error calling logout API, continuing logout anyway");
+  } finally {
+    // limpiar todo lo que pueda quedar
+    localStorage.clear();
+    sessionStorage.clear();
   }
 };
+
 
 /**
  * Checks if the user is currently authenticated.
