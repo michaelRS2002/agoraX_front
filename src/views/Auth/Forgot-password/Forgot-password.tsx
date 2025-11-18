@@ -103,37 +103,60 @@ const ForgotPassword: React.FC = (): JSX.Element => {
     <>
       <div className="app-container-forgot" role="main">
         <div className="main-content-forgot" role="presentation" aria-label="Fondo decorativo de películas">
-          <div className="forgot-box">
             <Link
               to="/login"
               className="back-arrow-forgot"
               aria-label="Volver a la página de inicio de sesión"
             >
-              <span className="back-arrow-symbol" aria-hidden>
-                ←
-              </span>
-              <span className="back-arrow-text">Volver</span>
+              {/* Prefer an image for the back icon; falls back to a simple arrow if image missing */}
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <div className="card-header-icon" aria-hidden>
-              <img src="/images/icon-mail-white.svg" alt="Icono de correo" className="card-header-image" />
+              <img
+                width={20}
+                height={20}
+                src="https://img.icons8.com/ios/50/FFFFFF/mail.png"
+                alt="Icono de correo"
+                className="card-header-image"
+              />
             </div>
-            <h2>Recuperar contraseña</h2>
-            <p>Ingresa el correo para recuperar tu contraseña</p>
+            <h2>¿Olvidaste tu contraseña?</h2>
+            <p>No te preocupes, te enviaremos instrucciones a tu correo para recuperar tu contraseña</p>
 
             <form className="form" onSubmit={handleSubmit} noValidate>
               <label htmlFor="email">Correo Electrónico</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="tu@email.com"
-                className="input"
-                value={email}
-                onChange={handleChange}
-                disabled={loading}
-                aria-label="Ingresa tu correo electrónico"
-                aria-required="true"
-                aria-invalid={emailError ? "true" : "false"}
-              />
+              <div className="field">
+                <div className="field-inner">
+                  <div className="field-icon" aria-hidden>
+                    <img
+                      src="https://img.icons8.com/ios/50/FFFFFF/mail.png"
+                      width={16}
+                      height={16}
+                      alt=""
+                    />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    placeholder="tu@email.com"
+                    className="input"
+                    value={email}
+                    onChange={handleChange}
+                    disabled={loading}
+                    aria-label="Ingresa tu correo electrónico"
+                    aria-required="true"
+                    aria-invalid={emailError ? "true" : "false"}
+                  />
+                </div>
+              </div>
               {emailError && (
                 <span className="error-message" role="alert">
                   {emailError}
@@ -165,22 +188,21 @@ const ForgotPassword: React.FC = (): JSX.Element => {
               )}
             </form>
 
-            <label className="login-redirect">
+            <label className="login-redirect-forgot">
               ¿Recordaste tu contraseña?{" "}
-              <Link to="/login" className="login-link">
+              <Link to="/login" className="to-login-link-forgot">
                 Volver al Inicio de Sesión
               </Link>
             </label>
 
-            <label className="login-redirect">
+            <label className="register-redirect-forgot">
               ¿Aún no tienes cuenta?{" "}
-              <Link to="/register" className="login-link">
+              <Link to="/register" className="to-register-link">
                 Registrarse
               </Link>
             </label>
           </div>
         </div>
-      </div>
     </>
   );
 };
