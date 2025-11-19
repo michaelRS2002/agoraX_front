@@ -5,7 +5,7 @@
  * Replace this value with your backend URL if needed.
  * @constant {string}
  */
-export const API_BASE_URL = "http://localhost:5100/api";
+export const API_BASE_URL = "https://agorax-back.onrender.com/api";
 
 /**
  * API endpoint definitions for different functionalities.
