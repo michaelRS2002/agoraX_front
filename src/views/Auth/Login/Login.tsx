@@ -118,8 +118,8 @@ const Login: React.FC = () => {
               className="card-header-image"
             />
           </div>
-          <h2>Inicia Sesión</h2>
-          <p>para acceder a tu biblioteca de películas</p>
+          <h2>Bienvenido de nuevo</h2>
+          <p>Ingresa a tu cuenta para acceder</p>
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="field">
