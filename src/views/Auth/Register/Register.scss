@@ -172,7 +172,9 @@ body { background: $primary-bg; }
   color: $subtitle-color;
   text-align: center; 
 }
-.to-login-link { color: $button-blue; font-weight: 600; text-decoration: none; }
+.to-login-link { color: $button-blue; font-weight: 600; text-decoration: none;&:hover {
+      text-decoration: underline;
+    } }
 
 // Header icon overlapping the card (camera icon container in screenshot)
 .card-header-icon {
