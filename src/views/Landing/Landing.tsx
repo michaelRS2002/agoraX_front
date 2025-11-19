@@ -17,21 +17,23 @@ const Landing: React.FC = () => {
 
   return (
     <div className="landing">
-      <div className="landing__container">
+      <div className="landing__container" role="main">
         <h1 className="landing__title">Bienvenido a AgoraX</h1>
         <p className="landing__description">
           Tu plataforma de videoconferencias
         </p>
-        <div className="landing__buttons">
+        <div className="landing__buttons" role="group" aria-label="Opciones de acceso">
           <button 
             className="landing__button landing__button--primary"
             onClick={() => navigate('/login')}
+            aria-label="Ir a iniciar sesión"
           >
             Iniciar Sesión
           </button>
           <button 
             className="landing__button landing__button--secondary"
             onClick={() => navigate('/register')}
+            aria-label="Ir a crear cuenta"
           >
             Registrarse
           </button>
