@@ -82,26 +82,31 @@ const Conference: React.FC = () => {
   }
 
   return (
-    <div className="conference">
+    <div className="conference" role="main" aria-label="Sala de conferencia">
       {/* Simple NavBar with logo only */}
-      <nav className="conference-navbar">
-        <Link to="/home" className="conference-logo">
-          <img src="/agorax_white.png" alt="AgoraX" />
+      <nav className="conference-navbar" role="navigation" aria-label="Navegación principal de conferencia">
+        <Link to="/home" className="conference-logo" aria-label="Volver a la página de inicio">
+          <img src="/agorax_white.png" alt="Logotipo de AgoraX" />
         </Link>
       </nav>
 
       <div className={`conference-content ${!isChatVisible ? 'conference-content--full' : ''}`}>
         {/* Video Grid */}
-        <div className="conference-video-section">
-          <div className="video-grid">
+        <div className="conference-video-section" role="region" aria-label="Cuadrícula de participantes">
+          <div className="video-grid" role="list" aria-label="Lista de participantes en la reunión">
             {participants.map((participant) => (
-              <div key={participant.id} className="video-tile">
-                <img src={participant.image} alt={participant.name} />
+              <div 
+                key={participant.id} 
+                className="video-tile" 
+                role="listitem"
+                aria-label={`Participante ${participant.name}${participant.isMuted ? ', micrófono silenciado' : ''}`}
+              >
+                <img src={participant.image} alt={`Video de ${participant.name}`} />
                 <div className="video-tile-overlay">
-                  <span className="video-tile-name">{participant.name}</span>
+                  <span className="video-tile-name" aria-label={`Nombre: ${participant.name}`}>{participant.name}</span>
                   {participant.isMuted && (
-                    <span className="video-tile-icon">
-                      <BiMicrophoneOff />
+                    <span className="video-tile-icon" aria-label="Micrófono silenciado">
+                      <BiMicrophoneOff aria-hidden="true" />
                     </span>
                   )}
                 </div>
@@ -112,30 +117,43 @@ const Conference: React.FC = () => {
 
         {/* Chat Sidebar */}
         {isChatVisible && (
-          <div className="conference-chat">
+          <div className="conference-chat" role="complementary" aria-label="Panel de chat">
             <div className="chat-header">
-              <h3>CHAT</h3>
+              <h3 id="chat-title">CHAT</h3>
             </div>
 
-            <div className="chat-messages">
+            <div 
+              className="chat-messages" 
+              role="log" 
+              aria-live="polite" 
+              aria-atomic="false"
+              aria-labelledby="chat-title"
+            >
               {messages.map((msg) => (
-                <div key={msg.id} className="chat-message">
-                  <span className="chat-message-user">{msg.user}</span>
+                <div key={msg.id} className="chat-message" role="article">
+                  <span className="chat-message-user" aria-label="Remitente">{msg.user}</span>
                   <p className="chat-message-text">{msg.text}</p>
                 </div>
               ))}
             </div>
 
-            <div className="chat-input">
+            <div className="chat-input" role="form" aria-label="Enviar mensaje de chat">
               <input
                 type="text"
                 placeholder="Envia un mensaje"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
+                aria-label="Escribir mensaje"
+                aria-describedby="chat-input-hint"
               />
-              <button onClick={handleSendMessage} title="Enviar mensaje">
-                <IoSend />
+              <span id="chat-input-hint" className="sr-only">Presiona Enter para enviar</span>
+              <button 
+                onClick={handleSendMessage} 
+                aria-label="Enviar mensaje"
+                type="submit"
+              >
+                <IoSend aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -143,38 +161,42 @@ const Conference: React.FC = () => {
       </div>
 
       {/* Footer with Controls */}
-      <footer className={`conference-footer ${isChatVisible ? 'chat-visible' : ''}`}>
+      <footer className={`conference-footer ${isChatVisible ? 'chat-visible' : ''}`} role="toolbar" aria-label="Controles de reunión">
         <div className="conference-controls">
-          <div className="controls-center">
+          <div className="controls-center" role="group" aria-label="Controles de audio y video">
             <button
               className={`control-btn control-btn--mic ${!isMicOn ? 'control-btn--off' : ''}`}
               onClick={toggleMic}
-              title={isMicOn ? 'Silenciar micrófono' : 'Activar micrófono'}
+              aria-label={isMicOn ? 'Silenciar micrófono' : 'Activar micrófono'}
+              aria-pressed={isMicOn ? 'true' : 'false'}
             >
-              {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
+              {isMicOn ? <BiMicrophone aria-hidden="true" /> : <BiMicrophoneOff aria-hidden="true" />}
             </button>
 
             <button
               className={`control-btn control-btn--video ${!isVideoOn ? 'control-btn--off' : ''}`}
               onClick={toggleVideo}
-              title={isVideoOn ? 'Desactivar video' : 'Activar video'}
+              aria-label={isVideoOn ? 'Desactivar video' : 'Activar video'}
+              aria-pressed={isVideoOn ? 'true' : 'false'}
             >
-              {isVideoOn ? <PiVideoCameraFill /> : <PiVideoCameraSlashFill />}
+              {isVideoOn ? <PiVideoCameraFill aria-hidden="true" /> : <PiVideoCameraSlashFill aria-hidden="true" />}
             </button>
           </div>
 
-          <div className="controls-right">
+          <div className="controls-right" role="group" aria-label="Controles adicionales">
             <button
               className="control-btn control-btn--chat"
               onClick={toggleChat}
-              title={isChatVisible ? 'Ocultar chat' : 'Mostrar chat'}
+              aria-label={isChatVisible ? 'Ocultar chat' : 'Mostrar chat'}
+              aria-pressed={isChatVisible ? 'true' : 'false'}
+              aria-expanded={isChatVisible ? 'true' : 'false'}
             >
-              {isChatVisible ? <RiChatOffLine /> : <RiChat4Line />}
+              {isChatVisible ? <RiChatOffLine aria-hidden="true" /> : <RiChat4Line aria-hidden="true" />}
             </button>
             <button
               className="control-btn control-btn--leave"
               onClick={handleLeaveCall}
-              title="Dejar reunión"
+              aria-label="Abandonar reunión"
             >
               Dejar Reunión
             </button>
@@ -184,14 +206,28 @@ const Conference: React.FC = () => {
 
       {/* Leave Confirmation Modal */}
       {showLeaveModal && (
-        <div className="modal-overlay" onClick={cancelLeaveCall}>
+        <div 
+          className="modal-overlay" 
+          onClick={cancelLeaveCall}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">¿Estás seguro que quieres abandonar la reunión?</h3>
-            <div className="modal-actions">
-              <button className="modal-btn modal-btn--cancel" onClick={cancelLeaveCall}>
+            <h3 id="modal-title" className="modal-title">¿Estás seguro que quieres abandonar la reunión?</h3>
+            <div className="modal-actions" role="group" aria-label="Acciones del modal">
+              <button 
+                className="modal-btn modal-btn--cancel" 
+                onClick={cancelLeaveCall}
+                aria-label="Cancelar y permanecer en la reunión"
+              >
                 Cancelar
               </button>
-              <button className="modal-btn modal-btn--confirm" onClick={confirmLeaveCall}>
+              <button 
+                className="modal-btn modal-btn--confirm" 
+                onClick={confirmLeaveCall}
+                aria-label="Confirmar y abandonar la reunión"
+              >
                 Aceptar
               </button>
             </div>

@@ -138,7 +138,7 @@ const Login: React.FC = () => {
                   disabled={loading}
                   aria-label="Ingresa tu correo electrónico"
                   aria-required="true"
-                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-invalid={errors.email ? 'true' : 'false'}
                 />
               </div>
             </div>
@@ -164,7 +164,7 @@ const Login: React.FC = () => {
                   disabled={loading}
                   aria-label="Ingresa tu contraseña"
                   aria-required="true"
-                  aria-invalid={errors.password ? "true" : "false"}
+                  aria-invalid={errors.password ? 'true' : 'false'}
                 />
               </div>
             </div>

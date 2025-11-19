@@ -275,7 +275,7 @@ const Register: React.FC = () => {
                 disabled={loading}
                 aria-label="Ingresa tu nombre completo"
                 aria-required="true"
-                aria-invalid={errors.name ? "true" : "false"}
+                aria-invalid={errors.name ? 'true' : 'false'}
               />
             </div>
             {errors.name && (
@@ -308,7 +308,7 @@ const Register: React.FC = () => {
                 min={0}
                 aria-label="Ingresa tu edad"
                 aria-required="true"
-                aria-invalid={errors.age ? "true" : "false"}
+                aria-invalid={errors.age ? 'true' : 'false'}
               />
             </div>
             {errors.age && (
@@ -340,7 +340,7 @@ const Register: React.FC = () => {
                 disabled={loading}
                 aria-label="Ingresa tu correo electrónico"
                 aria-required="true"
-                aria-invalid={errors.email ? "true" : "false"}
+                aria-invalid={errors.email ? 'true' : 'false'}
               />
             </div>
             {errors.email && (
@@ -393,7 +393,7 @@ const Register: React.FC = () => {
                 disabled={loading}
                 aria-label="Ingresa tu contraseña"
                 aria-required="true"
-                aria-invalid={errors.password ? "true" : "false"}
+                aria-invalid={errors.password ? 'true' : 'false'}
               />
             </div>
             {errors.password && (
@@ -446,7 +446,7 @@ const Register: React.FC = () => {
                 disabled={loading}
                 aria-label="Confirma tu contraseña"
                 aria-required="true"
-                aria-invalid={errors.confirmPassword ? "true" : "false"}
+                aria-invalid={errors.confirmPassword ? 'true' : 'false'}
               />
             </div>
             {errors.confirmPassword && (

@@ -28,20 +28,20 @@ const SiteMap: React.FC = () => {
     <div className="sitemap">
       <NavBar />
 
-      <div className="sitemap-container">
+      <div className="sitemap-container" role="main">
         <div className="sitemap-header">
-          <h1>Mapa del Sitio</h1>
+          <h1 id="sitemap-title">Mapa del Sitio</h1>
           <p className="sitemap-description">
             Encuentra todas las funcionalidades de AgoraX. Aquí está el mapa completo de navegación.
           </p>
         </div>
 
-        <div className="sitemap-grid">
+        <div className="sitemap-grid" role="navigation" aria-labelledby="sitemap-title">
           {/* Main Navigation Section */}
-          <div className="sitemap-card">
-            <div className="card-icon">🏠</div>
-            <h2>Navegación Principal</h2>
-            <ul>
+          <div className="sitemap-card" role="region" aria-labelledby="nav-main">
+            <div className="card-icon" aria-hidden="true">🏠</div>
+            <h2 id="nav-main">Navegación Principal</h2>
+            <ul role="list">
               <li>
                 <Link to="/">Página de Bienvenida</Link>
               </li>
@@ -52,10 +52,10 @@ const SiteMap: React.FC = () => {
           </div>
 
           {/* User Section */}
-          <div className="sitemap-card">
-            <div className="card-icon">👤</div>
-            <h2>Usuario</h2>
-            <ul>
+          <div className="sitemap-card" role="region" aria-labelledby="nav-user">
+            <div className="card-icon" aria-hidden="true">👤</div>
+            <h2 id="nav-user">Usuario</h2>
+            <ul role="list">
               <li>
                 <Link to="/login">Iniciar Sesión</Link>
               </li>
@@ -78,27 +78,27 @@ const SiteMap: React.FC = () => {
           </div>
 
           {/* Conference Section */}
-          <div className="sitemap-card">
-            <div className="card-icon">📹</div>
-            <h2>Videoconferencias</h2>
-            <ul>
+          <div className="sitemap-card" role="region" aria-labelledby="nav-conference">
+            <div className="card-icon" aria-hidden="true">📹</div>
+            <h2 id="nav-conference">Videoconferencias</h2>
+            <ul role="list">
               <li>
-                <span className="disabled-link">Iniciar Reunión</span>
+                <span className="disabled-link" aria-disabled="true">Iniciar Reunión</span>
               </li>
               <li>
-                <span className="disabled-link">Unirse a Reunión</span>
+                <span className="disabled-link" aria-disabled="true">Unirse a Reunión</span>
               </li>
               <li>
-                <span className="disabled-link">Sala de Conferencia</span>
+                <span className="disabled-link" aria-disabled="true">Sala de Conferencia</span>
               </li>
             </ul>
           </div>
 
           {/* Recovery Section */}
-          <div className="sitemap-card">
-            <div className="card-icon">🔐</div>
-            <h2>Recuperación</h2>
-            <ul>
+          <div className="sitemap-card" role="region" aria-labelledby="nav-recovery">
+            <div className="card-icon" aria-hidden="true">🔐</div>
+            <h2 id="nav-recovery">Recuperación</h2>
+            <ul role="list">
               <li>
                 <Link to="/forgot-password">Olvidé mi Contraseña</Link>
               </li>
