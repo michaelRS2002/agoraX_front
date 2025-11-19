@@ -46,40 +46,42 @@ const NavBar: React.FC = () => {
   }
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" role="navigation" aria-label="Navegación principal">
       <div className="navbar__container">
         {/* Logo que lleva a home */}
-        <Link to="/home" className="navbar__logo">
-          <img src="/agorax_white.png" alt="AgoraX" />
+        <Link to="/home" className="navbar__logo" aria-label="Ir a la página de inicio">
+          <img src="/agorax_white.png" alt="Logotipo de AgoraX" />
         </Link>
 
-        <div className="navbar__menu">
+        <div className="navbar__menu" role="menubar" aria-label="Menú de usuario">
           {loggedIn ? (
             <>
               {/* CERRAR SESIÓN cuando hay token */}
               <button
                 onClick={handleLogout}
                 className="navbar__button navbar__button--logout"
+                aria-label="Cerrar sesión"
+                role="menuitem"
               >
                 Cerrar Sesión
               </button>
 
-              <Link to="/user" className="navbar__icon-profile">
-                <FaRegUser />
+              <Link to="/user" className="navbar__icon-profile" aria-label="Ir a mi perfil" role="menuitem">
+                <FaRegUser aria-hidden="true" />
               </Link>
             </>
           ) : (
             <>
               {/* INICIAR Y REGISTRARSE cuando NO hay sesión */}
-              <button onClick={handleLogin} className="navbar__button">
+              <button onClick={handleLogin} className="navbar__button" aria-label="Iniciar sesión" role="menuitem">
                 Iniciar Sesión
               </button>
-              <button onClick={handleRegister} className="navbar__button">
+              <button onClick={handleRegister} className="navbar__button" aria-label="Crear cuenta nueva" role="menuitem">
                 Registrarse
               </button>
 
-              <Link to="/login" className="navbar__icon-profile">
-                <FaRegUser />
+              <Link to="/login" className="navbar__icon-profile" aria-label="Ir a iniciar sesión" role="menuitem">
+                <FaRegUser aria-hidden="true" />
               </Link>
             </>
           )}
