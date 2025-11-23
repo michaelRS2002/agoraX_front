@@ -81,8 +81,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/site-map" element={<SiteMap />} />
-        {/** Esta es solo de prueba, para ver el Front*/}
+        {/** Rutas de conferencia: ruta sin parámetro para prueba y ruta con parámetro para salas específicas */}
         <Route path="/conference" element={<Conference />} />
+        <Route path="/conference/:roomId" element={<ProtectedRoute element={<Conference />} />} />
 
         {/**
          * 🔒 Protected Routes — require authentication.

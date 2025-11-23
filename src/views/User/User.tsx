@@ -142,18 +142,25 @@ const User: React.FC = () => {
                   {user?.name || user?.nombres || "No disponible"}
                 </div>
               </div>
-              <div className="info-group">
-                <label>Edad</label>
-                <div className="info-value">
-                  {user?.age || user?.edad || "No disponible"}
+              {/* Mostrar edad solo si existe y es mayor a 0 (usuarios creados manualmente) */}
+              {(user?.age || user?.edad) ? (
+                <div className="info-group">
+                  <label>Edad</label>
+                  <div className="info-value">{user?.age || user?.edad}</div>
                 </div>
-              </div>
+              ) : null}
               <div className="info-group">
                 <label>Correo electrónico</label>
                 <div className="info-value">
                   {user?.email || "No disponible"}
                 </div>
               </div>
+              {/* Indicar si la cuenta viene de Firebase (Google/GitHub) */}
+              {user?.firebaseUid && (
+                <div style={{ marginTop: 8, color: '#0b5fff', fontWeight: 600 }}>
+                  Cuenta autenticada mediante proveedor (Firebase)
+                </div>
+              )}
               {error && (
                 <p
                   className="error-message"

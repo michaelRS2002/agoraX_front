@@ -69,7 +69,15 @@ class HttpClient {
         // If JSON parsing failed, ignore and proceed
       }
 
-      const response = await fetch(url, config);
+      let response: Response;
+      try {
+        response = await fetch(url, config);
+      } catch (fetchError: any) {
+        console.error('[HTTP CLIENT] network fetch error for', url, fetchError);
+        const e = new Error(`Network error fetching ${url}: ${fetchError?.message || fetchError}`);
+        (e as any).original = fetchError;
+        throw e;
+      }
       const contentType = response.headers.get("content-type") || "";
 
       // Handle HTTP errors
@@ -117,8 +125,18 @@ class HttpClient {
         return await response.json();
       }
       return await response.text();
-    } catch (error) {
+    } catch (error: any) {
       console.error("HTTP request error:", error);
+      // If this is a network-level error already wrapped above, propagate a clearer message
+      if (error && typeof error.message === 'string' && error.message.includes('Network error fetching')) {
+        throw error;
+      }
+      // If fetch produced a TypeError 'Failed to fetch', wrap it with URL info
+      if (error && (error instanceof TypeError || (error.message && error.message.includes('Failed to fetch')))) {
+        const e = new Error(`Network error fetching ${ (error && (error.url || 'resource')) }: ${error.message}`);
+        (e as any).original = error;
+        throw e;
+      }
       throw error;
     }
   }

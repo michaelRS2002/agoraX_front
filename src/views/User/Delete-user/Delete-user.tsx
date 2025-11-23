@@ -93,6 +93,8 @@ const DeleteUser: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const currentUser = getCurrentUser();
+  const isSocial = !!currentUser?.firebaseUid;
 
   /**
    * Handles form submission for account deletion.
@@ -111,8 +113,11 @@ const DeleteUser: React.FC = () => {
       return;
     }
 
-    if (!password) {
-      setError("Debes ingresar tu contraseña actual.");
+    // If the account was created via social/Firebase, password is not required
+    const currentUser = getCurrentUser();
+    const isSocial = !!currentUser?.firebaseUid;
+    if (!isSocial && !password) {
+      setError('Debes ingresar tu contraseña actual.');
       return;
     }
 
@@ -133,9 +138,10 @@ const DeleteUser: React.FC = () => {
       if (cancelled) return;
       try {
         const currentUser = getCurrentUser();
-        if (!currentUser || !currentUser.id)
-          throw new Error("Usuario no encontrado");
-        await deleteUserById(currentUser.id);
+        if (!currentUser || !currentUser.id) throw new Error('Usuario no encontrado');
+        // send password only for manual accounts; for social accounts pass undefined
+        const isSocial = !!currentUser?.firebaseUid;
+        await deleteUserById(currentUser.id, isSocial ? undefined : password);
         showPopup("Cuenta eliminada correctamente.", "success");
         setTimeout(() => {
           navigate("/login");
@@ -195,15 +201,19 @@ const DeleteUser: React.FC = () => {
                 required
               />
 
-              <label htmlFor="password">Confirma tu contraseña actual</label>
-              <input
-                id="password"
-                type="password"
-                className="input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              {!isSocial && (
+                <>
+                  <label htmlFor="password">Confirma tu contraseña actual</label>
+                  <input
+                    id="password"
+                    type="password"
+                    className="input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </>
+              )}
 
               {error && <div className="error-message">{error}</div>}
 
