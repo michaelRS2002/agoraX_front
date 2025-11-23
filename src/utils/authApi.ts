@@ -76,7 +76,13 @@ export const registerUser = async (userData: {
   password: string;
 }): Promise<any> => {
   try {
-    const response = await httpClient.post(API_ENDPOINTS.REGISTER, userData);
+    // Remove undefined properties so backend / Firestore don't receive `undefined` values
+    const payload: any = {};
+    for (const [k, v] of Object.entries(userData as any)) {
+      if (typeof v !== 'undefined') payload[k] = v;
+    }
+
+    const response = await httpClient.post(API_ENDPOINTS.REGISTER, payload);
     return response;
   } catch (error: any) {
     throw new Error("Error registering user: " + (error.message || ""));
@@ -171,13 +177,13 @@ export const getCurrentUser = (): User | null => {
 export const getUserById = async (userId: string): Promise<User> => {
   try {
     const response = await httpClient.get(`/users/${userId}`);
-    if (response) {
-      const currentUser = getCurrentUser();
-      if (currentUser && currentUser.id === userId) {
-        localStorage.setItem("user", JSON.stringify(response));
-      }
+    // backend returns { success: true, user }
+    const user = response?.user || response;
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.id === userId) {
+      localStorage.setItem('user', JSON.stringify(user));
     }
-    return response;
+    return user;
   } catch (error: any) {
     throw new Error("Error fetching user: " + (error.message || ""));
   }
@@ -216,16 +222,23 @@ export const updateUserById = async (
  * @returns {Promise<void>} Resolves when deletion is complete.
  * @throws {Error} If deletion fails.
  */
-export const deleteUserById = async (userId: string): Promise<void> => {
+export const deleteUserById = async (
+  userId: string,
+  password?: string
+): Promise<void> => {
   try {
-    await httpClient.delete(`/users/${userId}`);
+    // Some backends accept a body in DELETE; use request to allow body
+    await httpClient.request(`/users/${userId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    });
     const currentUser = getCurrentUser();
     if (currentUser && currentUser.id === userId) {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     }
   } catch (error: any) {
-    throw new Error("Error deleting user: " + (error.message || ""));
+    throw new Error('Error deleting user: ' + (error.message || ''));
   }
 };
 

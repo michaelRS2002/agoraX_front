@@ -20,6 +20,8 @@ interface BackendUser {
 type AuthStore = {
   user: BackendUser | null;
   setUser: (user: BackendUser | null) => void;
+  authInProgress: boolean;
+  setAuthInProgress: (v: boolean) => void;
 
   initAuthObserver: () => void;
   initFromLocalStorage: () => void;
@@ -34,8 +36,10 @@ type AuthStore = {
 const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   _observerInitialized: false,
+  authInProgress: false,
 
   setUser: (user) => set({ user }),
+  setAuthInProgress: (v: boolean) => set({ authInProgress: v }),
 
   // 🔵 Inicializar sesión desde localStorage
   initFromLocalStorage: () => {
@@ -57,7 +61,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         return;
       }
 
-      const idToken = await fbUser.getIdToken();
+      // force refresh token to avoid stale idToken issues
+      const idToken = await fbUser.getIdToken(true);
 
       try {
         const res = await httpClient.post("/auth/firebase-login", { idToken });
@@ -77,12 +82,17 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   // 🟢 Login con Google
   loginWithGoogle: async () => {
+    // prevent concurrent popup attempts
+    if (get().authInProgress) return;
+    get().setAuthInProgress(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const fbUser = result.user;
 
-      const idToken = await fbUser.getIdToken();
-      const res = await httpClient.post("/auth/firebase-login", { idToken });
+      // force refresh token to avoid stale idToken issues
+      const idToken = await fbUser.getIdToken(true);
+      // Note: backend expects idToken in POST /auth/login
+      const res = await httpClient.post("/auth/login", { idToken });
 
       const backendUser = res.user;
       const backendToken = res.token;
@@ -91,19 +101,31 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       localStorage.setItem("user", JSON.stringify(backendUser));
 
       set({ user: backendUser });
-    } catch (error) {
-      console.error("Error en Google Login:", error);
+    } catch (error: any) {
+      // handle specific firebase popup cancellation gracefully
+      const code = (error && (error as any).code) || '';
+      if (code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user') {
+        console.warn('Login popup cancelled by user or another popup was open.');
+      } else {
+        console.error('Error en Google Login:', error);
+      }
+      throw error;
+    } finally {
+      get().setAuthInProgress(false);
     }
   },
 
   // 🟣 Login con GitHub 
   loginWithGithub: async () => {
+    if (get().authInProgress) return;
+    get().setAuthInProgress(true);
     try {
       const result = await signInWithPopup(auth, githubProvider);
       const fbUser = result.user;
 
       const idToken = await fbUser.getIdToken();
-      const res = await httpClient.post("/auth/firebase-login", { idToken });
+      // Note: backend expects idToken in POST /auth/login
+      const res = await httpClient.post("/auth/login", { idToken });
 
       const backendUser = res.user;
       const backendToken = res.token;
@@ -112,8 +134,16 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       localStorage.setItem("user", JSON.stringify(backendUser));
 
       set({ user: backendUser });
-    } catch (error) {
-      console.error("Error en GitHub Login:", error);
+    } catch (error: any) {
+      const code = (error && (error as any).code) || '';
+      if (code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user') {
+        console.warn('Login popup cancelled by user or another popup was open.');
+      } else {
+        console.error('Error en GitHub Login:', error);
+      }
+      throw error;
+    } finally {
+      get().setAuthInProgress(false);
     }
   },
 

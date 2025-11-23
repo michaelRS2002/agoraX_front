@@ -2,15 +2,34 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Home.scss';
 import NavBar from "../../components/NavBar/NavBar";
+import { createMeeting } from '../../utils/meetingsApi';
 
 const Home: React.FC = () => {
   const [meetingId, setMeetingId] = useState('');
   const navigate = useNavigate();
 
   const handleStartMeeting = () => {
-    // Generar un ID único para la reunión
-    const newRoomId = Math.random().toString(36).substring(2, 15)
-    navigate(`/conference/${newRoomId}`)
+    // Llamar al backend para crear la reunión y navegar al roomId devuelto
+    (async () => {
+      try {
+        const stored = localStorage.getItem('user');
+        const user = stored ? JSON.parse(stored) : null;
+        const hostId = user?.id || user?.uid || undefined;
+        const resp = await createMeeting({ hostId });
+        const roomId = resp?.meeting?.roomId;
+        if (roomId) {
+          navigate(`/conference/${roomId}`);
+          return;
+        }
+        // fallback: generar localmente si el backend no devuelve roomId
+        const newRoomId = Math.random().toString(36).substring(2, 15);
+        navigate(`/conference/${newRoomId}`);
+      } catch (err) {
+        console.error('Error creando reunión, usando fallback:', err);
+        const newRoomId = Math.random().toString(36).substring(2, 15);
+        navigate(`/conference/${newRoomId}`);
+      }
+    })();
   };
 
   const handleJoinMeeting = () => {
