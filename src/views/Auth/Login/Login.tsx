@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   // 🔥 Importamos los 2 providers del store
-  const { loginWithGoogle, loginWithGithub } = useAuthStore();
+  const { loginWithGoogle, loginWithGithub, authInProgress } = useAuthStore();
 
   useEffect(() => {
     const applyNoScroll = () => {
@@ -87,6 +87,25 @@ const Login: React.FC = () => {
     }, 3000);
   };
 
+  const showError = (message: string) => {
+    let popup = document.getElementById("popup-message");
+    if (!popup) {
+      popup = document.createElement("div");
+      popup.id = "popup-message";
+      document.body.appendChild(popup);
+    }
+
+    popup.className = "popup-message popup-error popup-show";
+    popup.textContent = message;
+
+    // @ts-ignore
+    clearTimeout((popup as any)._timeout);
+    // @ts-ignore
+    (popup as any)._timeout = setTimeout(() => {
+      popup?.classList.remove("popup-show");
+    }, 4000);
+  };
+
   // ⭐ GOOGLE LOGIN
   const handleGoogleLogin = async () => {
     try {
@@ -94,6 +113,7 @@ const Login: React.FC = () => {
       navigate("/home");
     } catch (err) {
       console.error("Error en Google Login:", err);
+      showError((err && (err as any).message) || "Error al conectar con el servidor");
     }
   };
 
@@ -104,6 +124,7 @@ const Login: React.FC = () => {
       navigate("/home");
     } catch (err) {
       console.error("Error en GitHub Login:", err);
+      showError((err && (err as any).message) || "Error al conectar con el servidor");
     }
   };
 
@@ -203,6 +224,7 @@ const Login: React.FC = () => {
               onClick={handleGoogleLogin}
               type="button"
               className="social-btn google-btn"
+              disabled={authInProgress}
             >
               <img src="/images/google.png" alt="Google" />
               <span>Continuar con Google</span>
@@ -213,6 +235,7 @@ const Login: React.FC = () => {
               onClick={handleGithubLogin}
               type="button"
               className="social-btn github-btn"
+              disabled={authInProgress}
             >
               <img src="/images/github.png" alt="GitHub" />
               <span>Continuar con GitHub</span>

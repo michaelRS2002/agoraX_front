@@ -5,7 +5,11 @@
  * Replace this value with your backend URL if needed.
  * @constant {string}
  */
-export const API_BASE_URL = "http://localhost:5100/api";
+// For local development point this to your backend. Change to production URL when deploying.
+export const API_BASE_URL =
+  // Prefer Vite env var when available, else fallback to localhost for development
+  (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) ||
+  "http://localhost:3000/api";
 
 /**
  * API endpoint definitions for different functionalities.
