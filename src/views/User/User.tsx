@@ -125,11 +125,19 @@ const User: React.FC = () => {
               className="back-arrow-user"
               aria-label="Volver al inicio"
             >
-              ←
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
+              src="/images/video-call.png"
+              alt="Icono de cámara"
               className="icon"
             />
             <h2>Perfil de usuario</h2>
@@ -157,8 +165,8 @@ const User: React.FC = () => {
               </div>
               {/* Indicar si la cuenta viene de Firebase (Google/GitHub) */}
               {user?.firebaseUid && (
-                <div style={{ marginTop: 8, color: '#0b5fff', fontWeight: 600 }}>
-                  Cuenta autenticada mediante proveedor (Firebase)
+                <div style={{ marginTop: 8, color: '#3b82f6', fontWeight: 600 }}>
+                  Cuenta autenticada mediante proveedor externo
                 </div>
               )}
               {error && (
@@ -172,27 +180,27 @@ const User: React.FC = () => {
             </div>
 
             <div className="user-actions">
-              <Link
-                to="/edit-user"
-                className="btn-edit"
-                aria-label="Editar información de tu perfil"
-              >
-                Editar Perfil
-              </Link>
-              <Link
-                to="/delete-user"
-                className="btn-delete"
-                aria-label="Eliminar permanentemente tu cuenta"
-              >
-                Eliminar Cuenta
-              </Link>
+              {!user?.firebaseUid && (
+                <Link
+                  to="/edit-user"
+                  className="btn-edit"
+                  aria-label="Editar información de tu perfil"
+                >
+                  Editar Perfil
+                </Link>
+              )}
+              {user?.firebaseUid && (
+                <Link
+                  to="/delete-user"
+                  className="btn-delete"
+                  aria-label="Eliminar permanentemente tu cuenta"
+                >
+                  Eliminar Cuenta
+                </Link>
+              )}
             </div>
 
-            <label className="login-redirect">
-              <Link to="/home" className="login-link">
-                Volver al Inicio
-              </Link>
-            </label>
+            {/* Enlace inferior eliminado: la flecha de retroceso ya permite volver */}
           </div>
         </div>
       </div>
