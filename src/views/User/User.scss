@@ -19,9 +19,8 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
   align-items: center;
   font-family: "Poppins", sans-serif;
   color: $title-color;
-  min-height: 100vh;
+  min-height: 90vh;
   background-color: $primary-bg;
-  padding-top: 80px; // space for NavBar
 }
 
 .main-content-user {
@@ -47,8 +46,8 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
   z-index: 1;
 
   .icon {
-    width: 120px;
-    height: 120px;
+    width: 50px;
+    height: 50px;
     margin: 0 auto 1.25rem;
     display: block;
     border-radius: 12px;
@@ -73,25 +72,27 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 }
 
 .back-arrow-user {
-  display: inline-block;
   position: absolute;
-  top: 1.25rem;
-  left: 1.25rem;
-  font-size: 1.2rem;
-  color: $title-color;
-  background: rgba(255,255,255,0.03);
-  border-radius: 50%;
-  width: 2.8rem;
-  height: 2.8rem;
-  line-height: 2.8rem;
-  text-align: center;
-  text-decoration: none;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.35);
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
-  z-index: 30;
-
-  &:hover { background: rgba(255,255,255,0.06); }
+  top: 16px; /* inside the card, slightly inset to match Forgot-password */
+  left: 16px;
+  transform: none;
+  color: $subtitle-color; /* use subtitle color for 'Volver' */
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  box-shadow: none;
+  z-index: 80;
+  transition: background 120ms ease, opacity 120ms ease;
+  text-decoration: none; /* remove underline */
 }
+.back-arrow-user:hover { background: rgba(255,255,255,0.04); opacity: 0.95; }
+
+.back-arrow-img { width: 20px; height: 20px; display: inline-block; }
+.back-arrow-text { display: inline-block; color: $subtitle-color; }
 
 .user-info {
   display: flex;
@@ -171,6 +172,10 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
     line-height: 2.2rem;
     font-size: 1.6rem;
   }
+
+  /* hide the text label on small screens to keep the control compact */
+  .back-arrow-user .back-arrow-text { display: none; }
+  .back-arrow-user .back-arrow-symbol { font-size: 1.05rem; }
 }
 a:focus-visible,
 button:focus-visible,
