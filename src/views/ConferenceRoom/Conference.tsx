@@ -14,6 +14,11 @@ interface Message {
   timestamp: Date;
 }
 
+interface RoomUser {
+  socketId: string;
+  username: string;
+}
+
 const Conference: React.FC = () => {
   const navigate = useNavigate();
   const { roomId } = useParams();
@@ -26,6 +31,7 @@ const Conference: React.FC = () => {
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<RoomUser[]>([]);
 
   // obtener usuario del localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -36,38 +42,29 @@ const Conference: React.FC = () => {
   const toggleChat = () => setIsChatVisible(!isChatVisible);
 
   const handleLeaveCall = () => setShowLeaveModal(true);
-
   const confirmLeaveCall = () => navigate("/home");
-
   const cancelLeaveCall = () => setShowLeaveModal(false);
 
   /** ───────────────────────────────────────────────
-   * 🔌 SOCKET.IO – JOIN ROOM & RECEIVE MESSAGES
+   * 🔌 SOCKET.IO – JOIN ROOM & USERS LIST
    * ───────────────────────────────────────────────*/
   useEffect(() => {
     if (!socket || !roomId) return;
 
-    // unirse a la room
-    socket.emit("joinRoom", roomId);
+    socket.emit("joinRoom", { roomId, username });
 
-    // recibir mensajes del backend
-    const handleIncomingMessage = (msg: any) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          user: msg.user,
-          text: msg.text,
-          timestamp: new Date(),
-        },
-      ]);
-    };
+    socket.on("roomUsers", (users: RoomUser[]) => {
+      setUsers(users);
+    });
 
-    socket.on("message", handleIncomingMessage);
+    socket.on("message", (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
 
     return () => {
-      socket.off("message", handleIncomingMessage);
       socket.emit("leaveRoom", roomId);
+      socket.off("roomUsers");
+      socket.off("message");
     };
   }, [socket, roomId]);
 
@@ -83,7 +80,6 @@ const Conference: React.FC = () => {
       text: message.trim(),
     });
 
-    // NO añadimos el mensaje localmente → viene del servidor sin duplicarse
     setMessage("");
   };
 
@@ -93,7 +89,7 @@ const Conference: React.FC = () => {
 
   return (
     <div className="conference" role="main" aria-label="Sala de conferencia">
-      {/* NavBar simple */}
+      {/* NavBar */}
       <nav className="conference-navbar">
         <Link to="/home" className="conference-logo">
           <img src="/agorax_white.png" alt="AgoraX Logo" />
@@ -101,19 +97,21 @@ const Conference: React.FC = () => {
       </nav>
 
       <div className={`conference-content ${!isChatVisible ? "conference-content--full" : ""}`}>
-        {/* Zona principal video */}
+        {/* Area de video */}
         <div className="conference-video-section">
           <h2 style={{ textAlign: "center", marginTop: "20px", color: "white" }}>
             Sala: {roomId}
           </h2>
 
           <div className="video-grid">
-            <div className="video-tile">
-              <img src="/agorax_white.png" alt="Tu video" />
-              <div className="video-tile-overlay">
-                <span className="video-tile-name">{username}</span>
+            {users.map((u) => (
+              <div key={u.socketId} className="video-tile">
+                <img src="/agorax_white.png" alt="user video" />
+                <div className="video-tile-overlay">
+                  <span className="video-tile-name">{u.username}</span>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -203,6 +201,7 @@ const Conference: React.FC = () => {
 };
 
 export default Conference;
+
 
 
 
