@@ -84,15 +84,22 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 .delete-form .btn-delete-confirm { background:$button-red; color:$title-color }
 .delete-form .btn-delete-confirm:hover:not(:disabled) { box-shadow: 0 8px 24px rgba(11,20,40,0.32) }
 
-.error-message { color: #ff6b6b; font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.5rem; font-weight:500 }
+.error-message { color: #ff0000; font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.5rem; font-weight:500 }
 
 .login-redirect { display:block; margin-top:1rem; font-size:0.9rem; color:$subtitle-color; text-align:center }
 .app-container-delete .login-redirect .login-link { font-weight:600; text-decoration:none; color:$title-color }
 
-.popup-message { position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) scale(0.95); min-width:260px; max-width:90vw; z-index:9999; padding:1.2rem 2.2rem; border-radius:1.2rem; font-size:1.1rem; font-family: calibri, sans-serif; color:#fff; background:#222c; box-shadow:0 8px 32px 0 rgba(31,38,135,0.37); opacity:0; pointer-events:none; transition: opacity 0.3s, transform 0.3s; text-align:center }
-.popup-show { opacity:1; pointer-events:auto; transform: translate(-50%,-50%) scale(1) }
-.popup-error { background:#c0392b }
-.popup-success { background:#27ae60 }
+/* Force popup container to show as strong red box. Use !important to override accidental specificity elsewhere. */
+.popup-message { position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) scale(0.95); min-width:260px; max-width:90vw; z-index:9999; padding:1.2rem 2.2rem; border-radius:1.2rem; font-size:1.1rem; font-family: calibri, sans-serif; color:#fff; background:#ff0000 !important; box-shadow:0 8px 32px 0 rgba(31,38,135,0.37); pointer-events:none; transform-origin:center; text-align:center }
+.popup-show { pointer-events:auto; transform: translate(-50%,-50%) scale(1); background: #ff0000 !important; color: #ffffff !important }
+
+/* Explicit undo popup styling (background red, white text) */
+.popup-undo { background: #ff0000 !important; color: #ffffff }
+.popup-undo #undo-btn { margin-left: 1rem; background: $button-blue; color: $title-color; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer }
+.popup-undo #undo-btn:hover { filter: brightness(0.95) }
+
+.popup-error { background:#ff0000 }
+.popup-success { background:#27ae60 !important; color: #ffffff !important }
 
 @media (max-width:768px) {
   .app-container-delete { padding:1rem; padding-top:80px }
