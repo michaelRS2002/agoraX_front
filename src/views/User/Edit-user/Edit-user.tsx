@@ -6,6 +6,7 @@ import {
   getUserById,
   updateUserById,
 } from "../../../utils/authApi";
+import { NotFound } from "../../NotFound";
 import "./Edit-user.scss";
 
 /**
@@ -39,6 +40,12 @@ function showSuccess(message: string) {
  */
 const EditUser: React.FC = () => {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+
+  // If the user logged in via an external provider, show 404 and stop rendering the form
+  if (currentUser?.firebaseUid) {
+    return <NotFound />;
+  }
   const [nombres, setNombres] = useState("");
   const [edad, setEdad] = useState("");
   const [correo, setCorreo] = useState("");
@@ -54,6 +61,10 @@ const EditUser: React.FC = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const localUser = getCurrentUser();
+      // If the account is from an external provider (firebaseUid), editing is not allowed
+      if (localUser && localUser.firebaseUid) {
+        return;
+      }
       if (localUser && localUser.id) {
         try {
           const freshUser = await getUserById(localUser.id);
@@ -99,6 +110,8 @@ const EditUser: React.FC = () => {
 
   return (
     <>
+      {/* If user is provider-authenticated, show 404 */}
+      {getCurrentUser()?.firebaseUid ? <NotFound /> : null}
       <NavBar />
       <div className="app-container-edit">
         <div className="main-content-edit">
@@ -108,11 +121,19 @@ const EditUser: React.FC = () => {
               className="back-arrow-edit"
               aria-label="Volver al perfil"
             >
-              ←
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <img
               src="/images/video-call.png"
-              alt="Icono de cámara de AgoraX"
+              alt="Icono de cámara"
               className="icon"
             />
             <h2>Editar Perfil</h2>
@@ -159,14 +180,9 @@ const EditUser: React.FC = () => {
             </form>
 
             <div className="additional-links">
-              <label className="login-redirect">
-                <Link to="/change-password" className="login-link">
+              <label className="change-password-redirect">
+                <Link to="/change-password" className="change-password-link">
                   Cambiar contraseña
-                </Link>
-              </label>
-              <label className="login-redirect">
-                <Link to="/user" className="login-link">
-                  Cancelar y regresar
                 </Link>
               </label>
             </div>

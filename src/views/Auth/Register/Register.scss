@@ -46,7 +46,9 @@ body { background: $primary-bg; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 1rem 0rem;
+  /* add a small left padding so the register card visually matches login */
+  padding-left: 1rem;
 }
 
 .register-card {
@@ -54,7 +56,8 @@ body { background: $primary-bg; }
   max-width: 420px; // matches prototype
   background: $card-bg; // exact card color
   border-radius: $radius-md;
-  padding: 2.5rem 1.75rem 2rem;
+  padding: 2.25rem 2rem;
+  margin: 0 auto; /* enforce exact horizontal centering */
   box-shadow: $shadow-soft;
   color: $title-color;
   position: relative;
