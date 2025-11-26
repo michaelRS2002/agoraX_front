@@ -162,10 +162,18 @@ const DeleteUser: React.FC = () => {
           <div className="delete-box">
             <Link
               to="/user"
-              className="back-arrow-delete"
+              className="back-arrow-user"
               aria-label="Volver al perfil"
             >
-              ←
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <img
               src="/images/video-call.png"
@@ -173,7 +181,7 @@ const DeleteUser: React.FC = () => {
               className="icon"
             />
             <h2>Eliminar Cuenta</h2>
-            <p>Esta acción no se puede deshacer. Perderás todos tus datos.</p>
+            <p>Esta acción borra toda tu información de nuestros sistemas. Perderás todos tus datos.</p>
 
             <form className="delete-form" onSubmit={handleSubmit} noValidate>
               <div className="warning-box">
