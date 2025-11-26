@@ -20,7 +20,6 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
   color: $title-color;
   min-height: 90vh;
   background-color: $primary-bg;
-  padding-top: 80px; // espacio para NavBar
 }
 
 .main-content-delete {
@@ -63,9 +62,19 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 .back-arrow-delete { position:absolute; top:16px; left:16px; transform:none; color:$subtitle-color; background:transparent; padding:4px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:8px; font-size:0.95rem; box-shadow:none; z-index:80; text-decoration:none }
 .back-arrow-delete:hover { background: rgba(255,255,255,0.04); opacity: 0.95 }
 
-.warning-box { background: rgba(255, 244, 229, 0.04); border-radius:12px; padding:1rem; margin-bottom:1.25rem; text-align:left; border: 1px solid rgba(255,255,255,0.04); color:$subtitle-color }
-.warning-box strong { display:block; margin-bottom:0.5rem; color:$button-red }
-.warning-box p, .warning-box ul, .warning-box li { color:$subtitle-color }
+.warning-box {
+  background: rgba(255, 244, 229, 0.04);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: $subtitle-color;
+}
+.warning-box strong { display: block; margin-bottom: 0.5rem; color: $button-red }
+.warning-box p { color: $subtitle-color }
+.warning-box ul { color: $subtitle-color; margin-left: 1.25rem; padding-left: 0.5rem }
+.warning-box li { color: $subtitle-color; margin-bottom: 0.3rem }
 
 .delete-form { display:flex; flex-direction:column; text-align:left; margin-bottom:1.5rem }
 .delete-form label { font-weight:700; margin-top:0.5rem; margin-bottom:0.35rem; font-size:0.95rem; color:$title-color }
@@ -78,7 +87,7 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 .error-message { color: #ff6b6b; font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.5rem; font-weight:500 }
 
 .login-redirect { display:block; margin-top:1rem; font-size:0.9rem; color:$subtitle-color; text-align:center }
-.login-redirect .login-link { font-weight:600; text-decoration:none; color:$button-blue }
+.app-container-delete .login-redirect .login-link { font-weight:600; text-decoration:none; color:$title-color }
 
 .popup-message { position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) scale(0.95); min-width:260px; max-width:90vw; z-index:9999; padding:1.2rem 2.2rem; border-radius:1.2rem; font-size:1.1rem; font-family: calibri, sans-serif; color:#fff; background:#222c; box-shadow:0 8px 32px 0 rgba(31,38,135,0.37); opacity:0; pointer-events:none; transition: opacity 0.3s, transform 0.3s; text-align:center }
 .popup-show { opacity:1; pointer-events:auto; transform: translate(-50%,-50%) scale(1) }
