@@ -7,7 +7,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../../../components/NavBar/NavBar";
-import { changePassword } from "../../../utils/authApi";
+import { changePassword, getCurrentUser } from "../../../utils/authApi";
+import { NotFound } from "../../NotFound";
 import "./Change-password.scss";
 
 /**
@@ -75,6 +76,7 @@ function showError(message: string) {
  */
 const ChangePassword: React.FC = () => {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -132,6 +134,11 @@ const ChangePassword: React.FC = () => {
     }
   };
 
+  // If the current user is a social-authenticated (firebase) user, don't allow password change
+  if (currentUser?.firebaseUid) {
+    return <NotFound />;
+  }
+
   return (
     <>
       <NavBar />
@@ -143,11 +150,19 @@ const ChangePassword: React.FC = () => {
               className="back-arrow-change-password"
               aria-label="Volver a editar perfil"
             >
-              ←
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
+              src="/images/video-call.png"
+              alt="Icono de llamada de video"
               className="icon"
             />
             <h2>Cambiar Contraseña</h2>
@@ -198,19 +213,6 @@ const ChangePassword: React.FC = () => {
                 {loading ? "Cambiando..." : "Cambiar Contraseña"}
               </button>
             </form>
-
-            <div className="additional-links">
-              <label className="login-redirect">
-                <Link to="/edit-user" className="login-link">
-                  Volver a editar perfil
-                </Link>
-              </label>
-              <label className="login-redirect">
-                <Link to="/user" className="login-link">
-                  Ir al perfil
-                </Link>
-              </label>
-            </div>
           </div>
         </div>
       </div>
