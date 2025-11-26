@@ -189,15 +189,13 @@ const User: React.FC = () => {
                   Editar Perfil
                 </Link>
               )}
-              {user?.firebaseUid && (
-                <Link
-                  to="/delete-user"
-                  className="btn-delete"
-                  aria-label="Eliminar permanentemente tu cuenta"
-                >
-                  Eliminar Cuenta
-                </Link>
-              )}
+              <Link
+                to="/delete-user"
+                className="btn-delete"
+                aria-label="Eliminar permanentemente tu cuenta"
+              >
+                Eliminar Cuenta
+              </Link>
             </div>
 
             {/* Enlace inferior eliminado: la flecha de retroceso ya permite volver */}

@@ -1,7 +1,15 @@
-$color-bg: #ffffff;
-$color-box: #e7e7e7;
-$color-input: #d9d9d9;
-$color-button: #000000;
+// Dark theme variables (match User styles)
+$primary-bg: #0D1117;
+$card-bg: #242836;
+$textfield-bg: #1A1D2E;
+$button-blue: #3B82F6;
+$button-red: #FF0000;
+$title-color: #FFFFFF;
+$subtitle-color: #C3C3C3;
+$textfield-text: #8D8D8D;
+$radius-sm: 8px;
+$radius-md: 12px;
+$shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 
 .app-container-edit {
   flex: 1 1 auto;
@@ -9,10 +17,9 @@ $color-button: #000000;
   justify-content: center;
   align-items: center;
   font-family: "Poppins", sans-serif;
-  color: #000;
-  min-height: 100vh;
-  background-color: $color-bg;
-  padding-top: 80px; // Espacio para el NavBar
+  color: $title-color;
+  min-height: 90vh;
+  background-color: $primary-bg;
 }
 
 .main-content-edit {
@@ -20,69 +27,70 @@ $color-button: #000000;
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   padding: 2rem;
   position: relative;
-  z-index: 1; // Menor que el NavBar (1000)
+  z-index: 1;
 }
 
 .edit-box {
   position: relative;
-  background-color: $color-box;
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  background: $card-bg;
+  border-radius: $radius-md;
+  padding: 2.25rem 1.75rem;
   width: 100%;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-  z-index: 1; // Menor que el NavBar (1000)
+  box-shadow: $shadow-soft;
+  color: $title-color;
+  z-index: 1;
 
   .icon {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1.5rem;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 1.25rem;
     display: block;
+    border-radius: 12px;
+    background: $button-blue;
+    padding: 0.6rem;
+    box-shadow: 0 8px 24px rgba(11,20,40,0.35);
   }
 
   h2 {
-    font-size: 1.8rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: #000;
+    margin-bottom: 0.25rem;
+    color: $title-color;
   }
 
   p {
-    margin-bottom: 2rem;
-    font-size: 1rem;
-    color: #555;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    color: $subtitle-color;
     line-height: 1.4;
   }
 }
 
 .back-arrow-edit {
-  display: inline-block;
   position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
-  font-size: 1.8rem;
-  color: #000;
-  background: #fff;
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  line-height: 2.5rem;
-  text-align: center;
+  top: 16px;
+  left: 16px;
+  transform: none;
+  color: $subtitle-color;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  box-shadow: none;
+  z-index: 80;
+  transition: background 120ms ease, opacity 120ms ease;
   text-decoration: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-  z-index: 10;
-
-  &:hover {
-    background: $color-box;
-    color: #333;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    text-decoration: none;
-  }
 }
+.back-arrow-edit:hover { background: rgba(255,255,255,0.04); opacity: 0.95; }
+.back-arrow-img { width: 20px; height: 20px; display: inline-block; }
+.back-arrow-text { display: inline-block; color: $subtitle-color; }
 
 .edit-form {
   display: flex;
@@ -95,21 +103,22 @@ $color-button: #000000;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
-    color: #000;
+    color: $title-color;
   }
 
   .input {
-    background-color: $color-input;
-    border: none;
-    border-radius: 12px;
-    padding: 1rem;
+    background: $textfield-bg;
+    color: $title-color;
+    border-radius: $radius-sm;
+    padding: 0.9rem;
     font-size: 0.95rem;
+    border: 1px solid rgba(255,255,255,0.03);
     outline: none;
     margin-bottom: 1rem;
-    transition: background-color 0.2s;
+    transition: box-shadow 0.14s, border-color 0.14s;
 
     &:focus {
-      background-color: #d0d0d0;
+      box-shadow: 0 8px 24px rgba(11,20,40,0.32);
     }
 
     &:disabled {
@@ -125,31 +134,20 @@ $color-button: #000000;
   }
 
   .button {
-    background-color: $color-button;
-    color: white;
+    background: $button-blue;
+    color: $title-color;
     border: none;
-    border-radius: 10px;
-    padding: 1rem;
-    font-size: 1rem;
+    border-radius: $radius-sm;
+    padding: 0.85rem 1rem;
+    font-size: 0.94rem;
     font-weight: 600;
     cursor: pointer;
     margin-top: 0.5rem;
-    transition: background-color 0.2s ease, transform 0.1s;
+    width: 100%;
+    transition: box-shadow 0.14s;
 
-    &:hover:not(:disabled) {
-      background-color: #333;
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
+    &:hover:not(:disabled) { box-shadow: 0 8px 24px rgba(11,20,40,0.32); }
+    &:disabled { opacity: 0.7; cursor: not-allowed; }
   }
 }
 
@@ -161,16 +159,14 @@ $color-button: #000000;
   font-weight: 500;
 }
 
-.login-redirect {
+.change-password-redirect {
   display: block;
-  margin-top: 1rem;
   font-size: 0.9rem;
-  color: #666;
 
-  .login-link {
+  .change-password-link {
     font-weight: 600;
     text-decoration: none;
-    color: #000;
+    color: $title-color;
 
     &:hover {
       text-decoration: underline;

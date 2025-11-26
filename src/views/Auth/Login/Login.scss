@@ -28,25 +28,26 @@ body.no-scroll {
 // =====================================================
 
 .back-arrow-login {
-  display: inline-block;
   position: absolute;
-  top: 18%;
-  left: 8%;
-  font-size: 1.25rem;
-  color: $title-color;
-  background: rgba(255,255,255,0.03);
-  border-radius: 50%;
-  width: 3.4rem;
-  height: 3.4rem;
-  line-height: 3.4rem;
-  text-align: center;
+  top: 16px; /* inside the card, slightly inset to match Register/Forgot */
+  left: 16px;
+  transform: none;
+  color: $subtitle-color;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  box-shadow: none;
+  z-index: 80;
+  transition: background 120ms ease, opacity 120ms ease;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.35);
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
-  z-index: 30;
-
-  &:hover { background: rgba(255,255,255,0.06); }
 }
+.back-arrow-login:hover { background: rgba(255,255,255,0.04); opacity: 0.95; }
+.back-arrow-img { width: 20px; height: 20px; display: inline-block; }
+.back-arrow-text { display: inline-block; color: $subtitle-color; }
 
 .app-container {
   flex: 1 1 auto;
@@ -57,23 +58,23 @@ body.no-scroll {
   color: $title-color;
   background-color: $primary-bg;
   min-height: 100vh;
-  padding: 0.1rem;
   @media (max-width: 768px) { flex-direction: column; }
 }
 
 .login-box {
   background: $card-bg;
   border-radius: $radius-md;
-  padding: 2.25rem 2rem;
+  padding: 2.25rem 2rem; /* match Register padding */
   width: 100%;
-  max-width: 420px;
-  text-align: left;
+  max-width: 420px; /* match Register max-width */
+  margin: 0 auto; /* enforce horizontal centering */
+  text-align: center; /* center title and subtitle like Register */
+  align-items: center;
   box-shadow: $shadow-soft;
   position: relative;
 
-  h2 { margin: 0 0 6px 0; color: $title-color; font-size: 1.05rem; }
-  /* Center the heading and supporting paragraph while keeping form inputs left-aligned */
-  h2 { margin: 0 0 6px 0; color: $title-color; font-size: 1.05rem; text-align: center; }
+  /* match Register heading/subtitle spacing */
+  h2 { margin: 0 0 0.25rem 0; color: $title-color; font-size: 1.05rem; text-align: center; }
   p { margin: 0 0 14px 0; color: $subtitle-color; font-size: 0.95rem; text-align: center; }
 }
 
@@ -107,7 +108,7 @@ body.no-scroll {
 
 .register-text { margin-top:1rem; color:$subtitle-color; text-align:center; }
 
-.card-header-icon { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin: -36px auto 12px; box-shadow:0 8px 24px rgba(11,20,40,0.45); background:$button-blue; z-index:30; }
+.card-header-icon { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin: -10px auto 8px; box-shadow:0 8px 24px rgba(11,20,40,0.45); background:$button-blue; z-index:30; }
 .card-header-image { width:36px; height:36px; display:block; object-fit:cover; }
 
 .register-text {
@@ -126,11 +127,11 @@ body.no-scroll {
   }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive: match Register's mobile breakpoint and padding */
+@media (max-width: 720px) {
   .login-box {
     width: 95%;
-    padding: 1.5rem;
+    padding: 1.25rem; /* same as Register */
   }
 }
 
