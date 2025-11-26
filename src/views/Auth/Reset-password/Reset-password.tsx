@@ -8,7 +8,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { resetPassword } from "../../../utils/authApi";
-import NavBar from "../../../components/NavBar/NavBar";
 import "./Reset-password.scss";
 
 /**
@@ -109,20 +108,27 @@ const ResetPassword: React.FC = (): JSX.Element => {
 
   return (
     <>
-      <NavBar />
       <div className="app-container-reset" role="main">
         <div className="main-content-reset" role="presentation" aria-label="Fondo decorativo de películas">
           <div className="reset-box">
             <Link
               to="/login"
-              className="back-arrow-reset"
+              className="back-arrow-user"
               aria-label="Volver a la página de inicio de sesión"
             >
-              <span aria-hidden="true">←</span>
+              <img
+                width={16}
+                height={16}
+                src="https://img.icons8.com/material-sharp/24/c3c3c3/arrow-pointing-left.png"
+                className="back-arrow-img"
+                alt=""
+                aria-hidden
+              />
+              <div className="back-arrow-text">Volver</div>
             </Link>
             <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
+              src="/images/video-call.png"
+              alt="Icono de llamada de video"
               className="icon"
             />
             <h2>Restablecer contraseña</h2>
