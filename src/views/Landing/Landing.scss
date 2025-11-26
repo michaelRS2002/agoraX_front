@@ -1,69 +1,330 @@
 .landing {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #121525;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
 
-  &__container {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 60px 40px;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 500px;
+  // Decorative background elements
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    right: -5%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  &-container {
     width: 100%;
+    max-width: 1100px;
+    position: relative;
+    z-index: 1;
   }
 
-  &__title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
+  // Main unified card
+  &-card {
+    background: #242836;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    display: flex;
+    min-height: 500px;
+    animation: fadeIn 0.8s ease-out;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+    }
   }
 
-  &__description {
-    font-size: 1.2rem;
-    color: #666;
+  // Left Side - Logo
+  &-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 40px;
+  }
+
+  &-logo-wrapper {
+    text-align: center;
+  }
+
+  &-logo-image {
+    width: 100%;
+    max-width: 350px;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 10px 30px rgba(59, 130, 246, 0.2));
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  // Vertical divider
+  &-divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    align-self: stretch;
+    margin: 40px 0;
+  }
+
+  // Right Side - Auth Options
+  &-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 50px 50px;
+  }
+
+  &-header {
     margin-bottom: 40px;
   }
 
-  &__buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+  &-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: -0.5px;
   }
 
-  &__button {
-    padding: 15px 30px;
+  &-description {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  &-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+
+  &-button {
+    padding: 18px 32px;
     font-size: 1.1rem;
     font-weight: 600;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: #3B82F6;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
 
-    &--primary {
-      background: #667eea;
-      color: white;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    &:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    &:hover {
+      background: #2563eb;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    &:active {
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 3px solid rgba(59, 130, 246, 0.5);
+      outline-offset: 2px;
+    }
+
+    &-icon {
+      font-size: 1.3rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    &-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    &-primary,
+    &-secondary {
+      background: #3B82F6;
+      color: #FFFFFF;
 
       &:hover {
-        background: #5568d3;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        background: #2563eb;
+      }
+    }
+  }
+
+  &-footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  &-footer-text {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.95rem;
+  }
+
+  &-footer-link {
+    color: #3B82F6;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #3B82F6;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+
+  // Animations
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 968px) {
+    &-card {
+      flex-direction: column;
+      min-height: auto;
+    }
+
+    &-divider {
+      width: auto;
+      height: 1px;
+      margin: 0 40px;
+    }
+
+    &-left {
+      padding: 50px 30px 30px;
+    }
+
+    &-logo-image {
+      max-width: 280px;
+    }
+
+    &-right {
+      padding: 30px 50px 50px;
+    }
+
+    &-title {
+      font-size: 2rem;
+    }
+
+    &-description {
+      font-size: 1rem;
+    }
+
+    &-header {
+      margin-bottom: 30px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+
+    &-card {
+      border-radius: 16px;
+    }
+
+    &-divider {
+      margin: 0 25px;
+    }
+
+    &-left {
+      padding: 40px 25px 25px;
+    }
+
+    &-logo-image {
+      max-width: 200px;
+    }
+
+    &-right {
+      padding: 25px 25px 40px;
+    }
+
+    &-title {
+      font-size: 1.8rem;
+    }
+
+    &-description {
+      font-size: 0.95rem;
+    }
+
+    &-button {
+      padding: 16px 24px;
+      font-size: 1rem;
+
+      &-icon {
+        font-size: 1.1rem;
       }
     }
 
-    &--secondary {
-      background: #764ba2;
-      color: white;
-
-      &:hover {
-        background: #63408a;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
-      }
+    &-footer-text {
+      font-size: 0.85rem;
     }
   }
 }

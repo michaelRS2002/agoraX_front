@@ -168,8 +168,8 @@ const DeleteUser: React.FC = () => {
               ←
             </Link>
             <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
+              src="/images/video-call.png"
+              alt="Icono de cámara de AgoraX"
               className="icon"
             />
             <h2>Eliminar Cuenta</h2>
@@ -181,8 +181,8 @@ const DeleteUser: React.FC = () => {
                 <p>Al eliminar tu cuenta se borrarán permanentemente:</p>
                 <ul>
                   <li>Tu perfil y datos personales</li>
-                  <li>Todas tus películas favoritas</li>
-                  <li>Tu historial de actividad</li>
+                  <li>Tu historial de reuniones</li>
+                  <li>Tus contactos y configuraciones</li>
                   <li>Cualquier configuración personalizada</li>
                 </ul>
               </div>

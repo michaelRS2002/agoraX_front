@@ -111,8 +111,8 @@ const EditUser: React.FC = () => {
               ←
             </Link>
             <img
-              src="/static/img/film-icon.jpg"
-              alt="Logotipo de PopFix - ícono de carrete de película"
+              src="/images/video-call.png"
+              alt="Icono de cámara de AgoraX"
               className="icon"
             />
             <h2>Editar Perfil</h2>
