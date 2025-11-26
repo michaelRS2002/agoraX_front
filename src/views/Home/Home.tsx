@@ -87,7 +87,7 @@ const Home: React.FC = () => {
         <div className="footer-content">
           <div className="footer-column">
             <ul role="list" aria-label="Enlaces de cuenta">
-              <li><a href="/site-map" aria-label="Ir al mapa del sitio">Sobre nosotros</a></li>
+              <li><a href="/site-map" aria-label="Ir al mapa del sitio">Mapa del sitio</a></li>
               <li><a href="/register" aria-label="Crear una cuenta nueva">Registrarse</a></li>
               <li><a href="/login" aria-label="Iniciar sesión en tu cuenta">Iniciar sesión</a></li>
             </ul>

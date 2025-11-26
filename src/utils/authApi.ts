@@ -204,11 +204,13 @@ export const updateUserById = async (
 ): Promise<User> => {
   try {
     const response = await httpClient.put(`/users/${userId}`, updates);
+    // backend may return { success: true, user } or the user directly
+    const user = response?.user || response;
     const currentUser = getCurrentUser();
     if (currentUser && currentUser.id === userId) {
-      localStorage.setItem("user", JSON.stringify(response));
+      localStorage.setItem("user", JSON.stringify(user));
     }
-    return response;
+    return user;
   } catch (error: any) {
     throw new Error("Error updating user: " + (error.message || ""));
   }

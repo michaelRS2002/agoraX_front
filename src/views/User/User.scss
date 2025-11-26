@@ -1,4 +1,6 @@
+$use_statement: "@use \"sass:color\";\n";
 // Color variables (match Login/Register theme)
+@use "sass:color";
 $primary-bg: #0D1117;
 $card-bg: #242836;
 $textfield-bg: #1A1D2E;
@@ -132,7 +134,7 @@ $shadow-soft: 0 8px 24px rgba(2,6,23,0.5);
 .btn-edit { background: $button-blue; color: $title-color; }
 .btn-edit:hover { box-shadow: 0 8px 24px rgba(11,20,40,0.32); }
 
-.btn-delete { background: #ef4444; color: $title-color; }
+.btn-delete { background: $button-red; color: $title-color; }
 .btn-delete:hover { box-shadow: 0 8px 24px rgba(11,20,40,0.32); }
 
 .login-redirect { margin-top:1rem; color:$subtitle-color; text-align:center; }
@@ -189,5 +191,5 @@ input:focus-visible {
   outline: 3px solid #222130;
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(34, 33, 48, 0.1);
-  background-color: #b92a2a;
+  background-color: color.scale($button-red, $lightness: -12%);
 }
