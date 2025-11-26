@@ -162,7 +162,7 @@ const ChangePassword: React.FC = () => {
             </Link>
             <img
               src="/images/video-call.png"
-              alt="Icono de llamada de video"
+              alt="Icono de cámara de AgoraX"
               className="icon"
             />
             <h2>Cambiar Contraseña</h2>
