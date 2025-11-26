@@ -17,6 +17,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 // Global styles
 import './main.scss'
 
+// CONTEXT (nuevo)
+import { SocketProvider } from './context/SocketContext'
+
 // VIEWS
 import Home from './views/Home/Home'
 import Login from './views/Auth/Login/Login'
@@ -47,88 +50,40 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute'
  */
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <BrowserRouter>
-      {/* Scrolls to top when navigating to a new page */}
-      <ScrollToTop />
 
-      <Routes>
-        {/**
-         * 🌐 Public Routes — accessible without authentication.
-         *
-         * @route /
-         * @component Landing - Displays the landing page (entry point of the site).
-         *
-         * @route /login
-         * @component Login - Allows users to sign in.
-         *
-         * @route /register
-         * @component Register - Allows new users to create an account.
-         *
-         * @route /forgot-password
-         * @component ForgotPassword - Lets users request a password reset link.
-         *
-         * @route /reset-password
-         * @component ResetPassword - Enables users to reset their password using a token.
-         */}
-        
-        {/** Esta hay que modificarla, debido a que solo se hizo de prueba
-         * o modificar /home para que quede de predeterminada con las demás
-         * rutas */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/site-map" element={<SiteMap />} />
-        {/** Rutas de conferencia: ruta sin parámetro para prueba y ruta con parámetro para salas específicas */}
-        <Route path="/conference" element={<Conference />} />
-        <Route path="/conference/:roomId" element={<ProtectedRoute element={<Conference />} />} />
+    {/* -------------- ENVOLVEMOS TODA LA APP EN EL PROVIDER DE SOCKETS -------------- */}
+    <SocketProvider>
+      <BrowserRouter>
+        {/* Scrolls to top when navigating to a new page */}
+        <ScrollToTop />
 
-        {/**
-         * 🔒 Protected Routes — require authentication.
-         * These routes are wrapped with `ProtectedRoute`, which checks
-         * if the user is logged in before granting access.
-         *
-         * @route /home
-         * @component Home - Displays the main content page with movies.
-         *
-         * @route /perfil
-         * @component ProfileScreen - Displays the user's profile overview.
-         *
-         * @route /user
-         * @component User - Displays the user dashboard.
-         *
-         * @route /edit-user
-         * @component EditUser - Allows users to edit profile information.
-         *
-         * @route /delete-user
-         * @component DeleteUser - Handles user account deletion.
-         *
-         * @route /change-password
-         * @component ChangePassword - Enables password updates for authenticated users.
-         *
-         * @route /site-map
-         * @component SiteMap - Displays a structured overview of all available routes.
-         */}
-        
-        <Route path="/user" element={<ProtectedRoute element={<User />} />} />
-        <Route path="/edit-user" element={<ProtectedRoute element={<EditUser />} />} />
-        <Route path="/delete-user" element={<ProtectedRoute element={<DeleteUser />} />} />
-        <Route path="/change-password" element={<ProtectedRoute element={<ChangePassword />} />} />
-        {/**
-         * Esta de aquí si es la ruta, ya que aquí tmb se maneja la lógica del id
-         * <Route path="/conference/:roomId" element={<ProtectedRoute element={<Conference />} />} /> 
-         * */}
+        <Routes>
+          {/* 🌐 Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/site-map" element={<SiteMap />} />
 
-        {/**
-         * ❌ Fallback Route — catches undefined URLs.
-         *
-         * @route *
-         * @component NotFound - Displays a 404 page for invalid routes.
-         */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Rutas de conferencia */}
+          <Route path="/conference" element={<Conference />} />
+          <Route path="/conference/:roomId" element={<ProtectedRoute element={<Conference />} />} />
+
+          {/* 🔒 Protected Routes */}
+          <Route path="/user" element={<ProtectedRoute element={<User />} />} />
+          <Route path="/edit-user" element={<ProtectedRoute element={<EditUser />} />} />
+          <Route path="/delete-user" element={<ProtectedRoute element={<DeleteUser />} />} />
+          <Route path="/change-password" element={<ProtectedRoute element={<ChangePassword />} />} />
+
+          {/* ❌ 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </SocketProvider>
+    {/* --------------------------------------------------------------------------- */}
+
   </React.StrictMode>
 )
+
