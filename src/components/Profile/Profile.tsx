@@ -12,7 +12,7 @@ const Profile: React.FC = () => {
         <div className="container-page">
             <div >
                 <h1>Bienvenido</h1>
-                <h2>{user?.displayName}</h2>
+                <h2>{user?.name}</h2>
             </div>
         </div>
     )
