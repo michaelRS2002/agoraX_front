@@ -154,6 +154,7 @@ const ForgotPassword: React.FC = (): JSX.Element => {
                     aria-label="Ingresa tu correo electrónico"
                     aria-required="true"
                     aria-invalid={emailError ? "true" : "false"}
+                    autoComplete="email"
                   />
                 </div>
               </div>
