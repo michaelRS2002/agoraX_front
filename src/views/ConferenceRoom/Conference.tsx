@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { BiMicrophone, BiMicrophoneOff } from "react-icons/bi";
-import { PiVideoCameraFill, PiVideoCameraSlashFill } from "react-icons/pi";
 import { IoSend } from "react-icons/io5";
 import { RiChat4Line, RiChatOffLine } from "react-icons/ri";
 import "./Conference.scss";
-import { useSocket } from "../../context/SocketContext";
+
+import { useChatSocket, useAudioSocket } from "../../context/SocketContext";
 
 interface Message {
   id: string;
@@ -22,10 +22,11 @@ interface RoomUser {
 const Conference: React.FC = () => {
   const navigate = useNavigate();
   const { roomId } = useParams();
-  const socket = useSocket();
+
+  const chatSocket = useChatSocket();
+  const audioSocket = useAudioSocket();
 
   const [isMicOn, setIsMicOn] = useState(true);
-  const [isVideoOn, setIsVideoOn] = useState(true);
   const [isChatVisible, setIsChatVisible] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
@@ -33,48 +34,217 @@ const Conference: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<RoomUser[]>([]);
 
-  // obtener usuario del localStorage
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const remoteAudioRefs = useRef<Record<string, HTMLAudioElement>>({});
+  const peerConnections = useRef<Record<string, RTCPeerConnection>>({});
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const username = user?.name || user?.email?.split("@")[0] || "Usuario";
 
-  const toggleMic = () => setIsMicOn(!isMicOn);
-  const toggleVideo = () => setIsVideoOn(!isVideoOn);
+  /** ───────────────────────
+   *  MIC TOGGLE FIX
+   * ───────────────────────*/
+  const toggleMic = () => {
+  if (!localStream) return;
+
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (!audioTrack) return;
+
+  // Cambiar estado local
+  audioTrack.enabled = !audioTrack.enabled;
+  setIsMicOn(audioTrack.enabled);
+
+  // Aplicar a TODOS los peer connections 💡
+  Object.values(peerConnections.current).forEach(pc => {
+    pc.getSenders().forEach(sender => {
+      if (sender.track && sender.track.kind === "audio") {
+        sender.track.enabled = audioTrack.enabled;
+      }
+    });
+  });
+
+  console.log("Mic:", audioTrack.enabled ? "ON" : "OFF");
+};
+
+
+  /** Chat toggle */
   const toggleChat = () => setIsChatVisible(!isChatVisible);
 
   const handleLeaveCall = () => setShowLeaveModal(true);
   const confirmLeaveCall = () => navigate("/home");
   const cancelLeaveCall = () => setShowLeaveModal(false);
 
-  /** ───────────────────────────────────────────────
-   * 🔌 SOCKET.IO – JOIN ROOM & USERS LIST
-   * ───────────────────────────────────────────────*/
+  /** ───────────────────────
+   * CHAT SOCKET LOGIC
+   * ───────────────────────*/
   useEffect(() => {
-    if (!socket || !roomId) return;
+    if (!chatSocket || !roomId) return;
 
-    socket.emit("joinRoom", { roomId, username });
+    chatSocket.emit("joinRoom", { roomId, username });
 
-    socket.on("roomUsers", (users: RoomUser[]) => {
-      setUsers(users);
+    chatSocket.on("roomUsers", (users: RoomUser[]) => setUsers(users));
+    chatSocket.on("message", (msg) => setMessages(prev => [...prev, msg]));
+
+    return () => {
+      chatSocket.emit("leaveRoom", roomId);
+      chatSocket.off("roomUsers");
+      chatSocket.off("message");
+    };
+  }, [chatSocket, roomId]);
+
+  /** ───────────────────────
+   * GET USER MEDIA
+   * ───────────────────────*/
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        setLocalStream(stream);
+      })
+      .catch(err => console.error("Error accessing microphone:", err));
+  }, []);
+
+  /** ───────────────────────
+   * CREATE OR GET PEER
+   * (fix: avoid duplicates & mute breaking)
+   * ───────────────────────*/
+  const getOrCreatePeerConnection = (userId: string) => {
+    if (peerConnections.current[userId]) return peerConnections.current[userId];
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: import.meta.env.VITE_STUN_SERVER }]
     });
 
-    socket.on("message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+    /** Add track only ONCE */
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+
+      const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+
+      if (!alreadyAdded) {
+        pc.addTrack(audioTrack, localStream);
+      }
+    }
+
+    pc.ontrack = (event) => {
+      if (!remoteAudioRefs.current[userId]) {
+        const audio = new Audio();
+        audio.autoplay = true;
+        remoteAudioRefs.current[userId] = audio;
+      }
+      remoteAudioRefs.current[userId].srcObject = event.streams[0];
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        audioSocket?.emit("ice-candidate", {
+          to: userId,
+          candidate: event.candidate
+        });
+      }
+    };
+
+    peerConnections.current[userId] = pc;
+    return pc;
+  };
+
+  /** ───────────────────────
+   * CREATE OFFER
+   * ───────────────────────*/
+  const createOffer = async (userId: string) => {
+    const pc = getOrCreatePeerConnection(userId);
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    audioSocket?.emit("voice-offer", { to: userId, offer });
+  };
+
+  /** ───────────────────────
+   * RECEIVE OFFER
+   * (Fix: avoid double setRemoteDescription)
+   * ───────────────────────*/
+  const handleReceiveOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
+    const pc = getOrCreatePeerConnection(from);
+
+    if (pc.signalingState !== "stable") {
+      console.warn("Offer received while not stable, resetting...");
+      await pc.setLocalDescription({ type: "rollback" });
+    }
+
+    await pc.setRemoteDescription(offer);
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    audioSocket?.emit("voice-answer", { to: from, answer });
+  };
+
+  /** ───────────────────────
+   * RECEIVE ANSWER
+   * ───────────────────────*/
+  const handleReceiveAnswer = async (from: string, answer: RTCSessionDescriptionInit) => {
+    const pc = peerConnections.current[from];
+    if (!pc) return;
+
+    if (pc.signalingState === "have-local-offer") {
+      await pc.setRemoteDescription(answer);
+    }
+  };
+
+  /** ───────────────────────
+   * AUDIO SIGNALING EVENTS
+   * ───────────────────────*/
+  useEffect(() => {
+    if (!audioSocket || !roomId || !localStream) return;
+
+    audioSocket.emit("join-voice-room", roomId);
+
+    audioSocket.on("user-joined", (userId: string) => {
+      createOffer(userId);
+    });
+
+    audioSocket.on("voice-offer", async ({ from, offer }) => {
+      await handleReceiveOffer(from, offer);
+    });
+
+    audioSocket.on("voice-answer", async ({ from, answer }) => {
+      await handleReceiveAnswer(from, answer);
+    });
+
+    audioSocket.on("ice-candidate", ({ from, candidate }) => {
+      const pc = peerConnections.current[from];
+      if (pc && candidate) {
+        pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    audioSocket.on("user-left", (userId: string) => {
+      if (peerConnections.current[userId]) {
+        peerConnections.current[userId].close();
+        delete peerConnections.current[userId];
+      }
+      if (remoteAudioRefs.current[userId]) {
+        delete remoteAudioRefs.current[userId];
+      }
     });
 
     return () => {
-      socket.emit("leaveRoom", roomId);
-      socket.off("roomUsers");
-      socket.off("message");
+      audioSocket.off("user-joined");
+      audioSocket.off("voice-offer");
+      audioSocket.off("voice-answer");
+      audioSocket.off("ice-candidate");
+      audioSocket.off("user-left");
     };
-  }, [socket, roomId]);
 
-  /** ───────────────────────────────────────────────
-   * ✉️ Enviar mensaje
-   * ───────────────────────────────────────────────*/
+  }, [audioSocket, roomId, localStream]);
+
+  /** ───────────────────────
+   * CHAT SEND
+   * ───────────────────────*/
   const handleSendMessage = () => {
-    if (!socket || !roomId || message.trim().length === 0) return;
+    if (!chatSocket || !roomId || message.trim().length === 0) return;
 
-    socket.emit("sendMessage", {
+    chatSocket.emit("sendMessage", {
       roomId,
       user: username,
       text: message.trim(),
@@ -83,13 +253,8 @@ const Conference: React.FC = () => {
     setMessage("");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSendMessage();
-  };
-
   return (
-    <div className="conference" role="main" aria-label="Sala de conferencia">
-      {/* NavBar */}
+    <div className="conference">
       <nav className="conference-navbar">
         <Link to="/home" className="conference-logo">
           <img src="/agorax_white.png" alt="AgoraX Logo" />
@@ -97,30 +262,27 @@ const Conference: React.FC = () => {
       </nav>
 
       <div className={`conference-content ${!isChatVisible ? "conference-content--full" : ""}`}>
-        {/* Area de video */}
         <div className="conference-video-section">
-          <h2 style={{ textAlign: "center", marginTop: "20px", color: "white" }}>
-            Sala: {roomId}
-          </h2>
+          <h2 style={{ color: "white", marginTop: "20px" }}>Sala: {roomId}</h2>
 
           <div className="video-grid">
-            {users.map((u) => (
-              <div key={u.socketId} className="video-tile">
-                <img src="/agorax_white.png" alt="user video" />
-                <div className="video-tile-overlay">
-                  <span className="video-tile-name">{u.username}</span>
+            <div className="video-tile audio-only">
+              <p style={{ color: "white" }}>{username} (Tú)</p>
+            </div>
+
+            {users.map(u => (
+              u.socketId !== chatSocket?.id && (   
+                <div key={u.socketId} className="video-tile audio-only">
+                  <p style={{ color: "white" }}>{u.username}</p>
                 </div>
-              </div>
+              )
             ))}
           </div>
         </div>
 
-        {/* Chat */}
         {isChatVisible && (
           <div className="conference-chat">
-            <div className="chat-header">
-              <h3>CHAT</h3>
-            </div>
+            <div className="chat-header"><h3>CHAT</h3></div>
 
             <div className="chat-messages">
               {messages.map((msg) => (
@@ -134,61 +296,45 @@ const Conference: React.FC = () => {
             <div className="chat-input">
               <input
                 type="text"
-                placeholder="Escribe un mensaje..."
                 value={message}
+                placeholder="Escribe un mensaje..."
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
-              <button onClick={handleSendMessage}>
-                <IoSend />
-              </button>
+              <button onClick={handleSendMessage}><IoSend /></button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Controles */}
       <footer className={`conference-footer ${isChatVisible ? "chat-visible" : ""}`}>
         <div className="conference-controls">
-          <div className="controls-center">
-            <button
-              className={`control-btn control-btn--mic ${!isMicOn ? "control-btn--off" : ""}`}
-              onClick={toggleMic}
-            >
-              {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
-            </button>
 
-            <button
-              className={`control-btn control-btn--video ${!isVideoOn ? "control-btn--off" : ""}`}
-              onClick={toggleVideo}
-            >
-              {isVideoOn ? <PiVideoCameraFill /> : <PiVideoCameraSlashFill />}
-            </button>
-          </div>
+          <button
+            className={`control-btn control-btn--mic ${!isMicOn ? "control-btn--off" : ""}`}
+            onClick={toggleMic}
+          >
+            {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
+          </button>
 
-          <div className="controls-right">
-            <button className="control-btn control-btn--chat" onClick={toggleChat}>
-              {isChatVisible ? <RiChatOffLine /> : <RiChat4Line />}
-            </button>
+          <button className="control-btn control-btn--chat" onClick={toggleChat}>
+            {isChatVisible ? <RiChatOffLine /> : <RiChat4Line />}
+          </button>
 
-            <button className="control-btn control-btn--leave" onClick={handleLeaveCall}>
-              Dejar reunión
-            </button>
-          </div>
+          <button className="control-btn control-btn--leave" onClick={handleLeaveCall}>
+            Dejar reunión
+          </button>
         </div>
       </footer>
 
-      {/* Modal */}
       {showLeaveModal && (
         <div className="modal-overlay" onClick={cancelLeaveCall}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">¿Salir de la reunión?</h3>
-
             <div className="modal-actions">
               <button className="modal-btn modal-btn--cancel" onClick={cancelLeaveCall}>
                 Cancelar
               </button>
-
               <button className="modal-btn modal-btn--confirm" onClick={confirmLeaveCall}>
                 Aceptar
               </button>
@@ -196,11 +342,16 @@ const Conference: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
 
 export default Conference;
+
+
+
+
 
 
 
