@@ -41,72 +41,53 @@ const Conference: React.FC = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const username = user?.name || user?.email?.split("@")[0] || "Usuario";
 
-  // ─────────────────────────────────────────────
-  // TOGGLE MIC
-  // ─────────────────────────────────────────────
+  /** ───────────────────────
+   *  MIC TOGGLE FIX
+   * ───────────────────────*/
   const toggleMic = () => {
-    if (!localStream) return;
+  if (!localStream) return;
 
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (!audioTrack) return;
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (!audioTrack) return;
 
-    audioTrack.enabled = !audioTrack.enabled;
-    setIsMicOn(audioTrack.enabled);
+  // Cambiar estado local
+  audioTrack.enabled = !audioTrack.enabled;
+  setIsMicOn(audioTrack.enabled);
 
-    Object.values(peerConnections.current).forEach(pc => {
-      pc.getSenders().forEach(sender => {
-        if (sender.track?.kind === "audio") {
-          sender.track.enabled = audioTrack.enabled;
-        }
-      });
+  // Aplicar a TODOS los peer connections 💡
+  Object.values(peerConnections.current).forEach(pc => {
+    pc.getSenders().forEach(sender => {
+      if (sender.track && sender.track.kind === "audio") {
+        sender.track.enabled = audioTrack.enabled;
+      }
     });
-  };
+  });
 
+  console.log("Mic:", audioTrack.enabled ? "ON" : "OFF");
+};
+
+
+  /** Chat toggle */
   const toggleChat = () => setIsChatVisible(!isChatVisible);
 
   const handleLeaveCall = () => setShowLeaveModal(true);
-
-  // ─────────────────────────────────────────────
-  // CLEAN DISCONNECT (VERY IMPORTANT)
-  // ─────────────────────────────────────────────
-  const cleanDisconnect = () => {
-
-    console.log("Cleaning WebRTC + Sockets + Streams");
-
-    // Close peer connections
-    Object.values(peerConnections.current).forEach(pc => pc.close());
-    peerConnections.current = {};
-
-    // Stop local audio stream
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-    }
-
-    // Disconnect sockets
-    audioSocket?.emit("leaveRoom", roomId);
-    audioSocket?.disconnect();
-
-    chatSocket?.emit("leaveRoom", roomId);
-    chatSocket?.disconnect();
-  };
-
   const confirmLeaveCall = () => {
-    cleanDisconnect();
+    // cleanup audio and peer connections before leaving
+    leaveVoiceRoom();
     navigate("/home");
   };
-
   const cancelLeaveCall = () => setShowLeaveModal(false);
 
-  // ─────────────────────────────────────────────
-  // CHAT SOCKET
-  // ─────────────────────────────────────────────
+  /** ───────────────────────
+   * CHAT SOCKET LOGIC
+   * ───────────────────────*/
   useEffect(() => {
     if (!chatSocket || !roomId) return;
 
     chatSocket.emit("joinRoom", { roomId, username });
 
-    chatSocket.on("roomUsers", setUsers);
-    chatSocket.on("message", msg => setMessages(prev => [...prev, msg]));
+    chatSocket.on("roomUsers", (users: RoomUser[]) => setUsers(users));
+    chatSocket.on("message", (msg) => setMessages(prev => [...prev, msg]));
 
     return () => {
       chatSocket.emit("leaveRoom", roomId);
@@ -115,16 +96,21 @@ const Conference: React.FC = () => {
     };
   }, [chatSocket, roomId]);
 
-  // ─────────────────────────────────────────────
-  // GET AUDIO STREAM
-  // ─────────────────────────────────────────────
+  /** ───────────────────────
+   * GET USER MEDIA
+   * ───────────────────────*/
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(setLocalStream);
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        setLocalStream(stream);
+      })
+      .catch(err => console.error("Error accessing microphone:", err));
   }, []);
 
-  // ─────────────────────────────────────────────
-  // GET / CREATE PC
-  // ─────────────────────────────────────────────
+  /** ───────────────────────
+   * CREATE OR GET PEER
+   * (fix: avoid duplicates & mute breaking)
+   * ───────────────────────*/
   const getOrCreatePeerConnection = (userId: string) => {
     if (peerConnections.current[userId]) return peerConnections.current[userId];
 
@@ -132,15 +118,18 @@ const Conference: React.FC = () => {
       iceServers: [{ urls: import.meta.env.VITE_STUN_SERVER }]
     });
 
+    /** Add track only ONCE */
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
 
-      if (!pc.getSenders().some(s => s.track?.kind === "audio")) {
+      const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+
+      if (!alreadyAdded) {
         pc.addTrack(audioTrack, localStream);
       }
     }
 
-    pc.ontrack = event => {
+    pc.ontrack = (event) => {
       if (!remoteAudioRefs.current[userId]) {
         const audio = new Audio();
         audio.autoplay = true;
@@ -149,7 +138,7 @@ const Conference: React.FC = () => {
       remoteAudioRefs.current[userId].srcObject = event.streams[0];
     };
 
-    pc.onicecandidate = event => {
+    pc.onicecandidate = (event) => {
       if (event.candidate) {
         audioSocket?.emit("ice-candidate", {
           to: userId,
@@ -162,7 +151,9 @@ const Conference: React.FC = () => {
     return pc;
   };
 
-  // CREATE OFFER
+  /** ───────────────────────
+   * CREATE OFFER
+   * ───────────────────────*/
   const createOffer = async (userId: string) => {
     const pc = getOrCreatePeerConnection(userId);
 
@@ -172,10 +163,15 @@ const Conference: React.FC = () => {
     audioSocket?.emit("voice-offer", { to: userId, offer });
   };
 
+  /** ───────────────────────
+   * RECEIVE OFFER
+   * (Fix: avoid double setRemoteDescription)
+   * ───────────────────────*/
   const handleReceiveOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
     const pc = getOrCreatePeerConnection(from);
 
     if (pc.signalingState !== "stable") {
+      console.warn("Offer received while not stable, resetting...");
       await pc.setLocalDescription({ type: "rollback" });
     }
 
@@ -187,6 +183,9 @@ const Conference: React.FC = () => {
     audioSocket?.emit("voice-answer", { to: from, answer });
   };
 
+  /** ───────────────────────
+   * RECEIVE ANSWER
+   * ───────────────────────*/
   const handleReceiveAnswer = async (from: string, answer: RTCSessionDescriptionInit) => {
     const pc = peerConnections.current[from];
     if (!pc) return;
@@ -196,19 +195,13 @@ const Conference: React.FC = () => {
     }
   };
 
-  // ─────────────────────────────────────────────
-  // AUDIO SOCKET EVENTS
-  // ─────────────────────────────────────────────
+  /** ───────────────────────
+   * AUDIO SIGNALING EVENTS
+   * ───────────────────────*/
   useEffect(() => {
     if (!audioSocket || !roomId || !localStream) return;
 
     audioSocket.emit("join-voice-room", roomId);
-
-    // SALA LLENA
-    audioSocket.on("room-full", ({ max }) => {
-      alert(`La sala está llena. Máximo permitido: ${max} personas`);
-      navigate("/home");
-    });
 
     audioSocket.on("user-joined", (userId: string) => {
       createOffer(userId);
@@ -234,23 +227,69 @@ const Conference: React.FC = () => {
         peerConnections.current[userId].close();
         delete peerConnections.current[userId];
       }
-      delete remoteAudioRefs.current[userId];
+      if (remoteAudioRefs.current[userId]) {
+        delete remoteAudioRefs.current[userId];
+      }
     });
 
     return () => {
-      audioSocket.off("room-full");
       audioSocket.off("user-joined");
       audioSocket.off("voice-offer");
       audioSocket.off("voice-answer");
       audioSocket.off("ice-candidate");
       audioSocket.off("user-left");
+      // Emit leave and cleanup on unmount
+      try {
+        audioSocket.emit("leave-voice-room", roomId);
+      } catch (e) {
+        // ignore
+      }
+      // Close peer connections and stop tracks
+      Object.values(peerConnections.current).forEach(pc => {
+        try { pc.close(); } catch (e) {}
+      });
+      peerConnections.current = {};
+      if (localStream) {
+        localStream.getTracks().forEach(t => {
+          try { t.stop(); } catch (e) {}
+        });
+      }
+      // cleanup remote audio elements
+      Object.values(remoteAudioRefs.current).forEach(a => {
+        try { a.pause(); a.srcObject = null; } catch (e) {}
+      });
+      remoteAudioRefs.current = {};
     };
 
   }, [audioSocket, roomId, localStream]);
 
-  // ─────────────────────────────────────────────
-  // SEND CHAT MESSAGE
-  // ─────────────────────────────────────────────
+  /**
+   * Cleanup helper to leave voice room and free resources.
+   * Called when user explicitly leaves or component unmounts.
+   */
+  const leaveVoiceRoom = () => {
+    if (audioSocket && roomId) {
+      try { audioSocket.emit("leave-voice-room", roomId); } catch (e) {}
+    }
+
+    Object.values(peerConnections.current).forEach(pc => {
+      try { pc.close(); } catch (e) {}
+    });
+    peerConnections.current = {};
+
+    if (localStream) {
+      try { localStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    }
+
+    Object.values(remoteAudioRefs.current).forEach(a => {
+      try { a.pause(); a.srcObject = null; } catch (e) {}
+    });
+    remoteAudioRefs.current = {};
+  };
+
+  /** ───────────────────────
+   * CHAT SEND
+   * ───────────────────────*/
   const handleSendMessage = () => {
     if (!chatSocket || !roomId || message.trim().length === 0) return;
 
@@ -280,13 +319,13 @@ const Conference: React.FC = () => {
               <p style={{ color: "white" }}>{username} (Tú)</p>
             </div>
 
-            {users.map(u =>
-              u.socketId !== chatSocket?.id && (
+            {users.map(u => (
+              u.socketId !== chatSocket?.id && (   
                 <div key={u.socketId} className="video-tile audio-only">
                   <p style={{ color: "white" }}>{u.username}</p>
                 </div>
               )
-            )}
+            ))}
           </div>
         </div>
 
@@ -308,8 +347,8 @@ const Conference: React.FC = () => {
                 type="text"
                 value={message}
                 placeholder="Escribe un mensaje..."
-                onChange={e => setMessage(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSendMessage()}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
               <button onClick={handleSendMessage}><IoSend /></button>
             </div>
@@ -358,13 +397,3 @@ const Conference: React.FC = () => {
 };
 
 export default Conference;
-
-
-
-
-
-
-
-
-
-
