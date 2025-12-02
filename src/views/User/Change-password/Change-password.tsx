@@ -181,6 +181,7 @@ const ChangePassword: React.FC = () => {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
 
               <label htmlFor="newPassword">Nueva contraseña</label>
@@ -192,6 +193,7 @@ const ChangePassword: React.FC = () => {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
                 required
+                autoComplete="new-password"
               />
 
               <label htmlFor="confirmPassword">
@@ -205,6 +207,7 @@ const ChangePassword: React.FC = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repite la nueva contraseña"
                 required
+                autoComplete="new-password"
               />
 
               {error && <div className="error-message">{error}</div>}

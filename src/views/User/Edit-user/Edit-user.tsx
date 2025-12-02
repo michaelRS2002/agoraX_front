@@ -148,6 +148,7 @@ const EditUser: React.FC = () => {
                 value={nombres}
                 onChange={(e) => setNombres(e.target.value)}
                 required
+                autoComplete="name"
               />
 
               <label htmlFor="edad">Edad</label>
@@ -170,6 +171,7 @@ const EditUser: React.FC = () => {
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 required
+                autoComplete="email"
               />
 
               {error && <div className="error-message">{error}</div>}
