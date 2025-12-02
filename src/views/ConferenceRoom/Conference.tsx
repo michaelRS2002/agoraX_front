@@ -117,7 +117,7 @@ const Conference: React.FC = () => {
     // Build ICE servers from environment (supports VITE_ICE_SERVERS JSON, STUN and TURN)
     let iceServers: RTCIceServer[] = [];
 
-    const iceEnv = import.meta.env.VITE_ICE_SERVERS;
+    const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
     if (iceEnv) {
       try {
         const parsed = JSON.parse(iceEnv as string) as RTCIceServer[];
@@ -130,10 +130,11 @@ const Conference: React.FC = () => {
     }
 
     if (!iceServers.length) {
-      const stunUrl = import.meta.env.VITE_STUN_URL ?? import.meta.env.VITE_STUN_SERVER;
-      const turnUrl = import.meta.env.VITE_TURN_URL;
-      const turnUser = import.meta.env.VITE_TURN_USER;
-      const turnPass = import.meta.env.VITE_TURN_PASS;
+      const env = (import.meta as any).env ?? {};
+      const stunUrl = env.VITE_STUN_URL ?? env.VITE_STUN_SERVER;
+      const turnUrl = env.VITE_TURN_URL;
+      const turnUser = env.VITE_TURN_USER;
+      const turnPass = env.VITE_TURN_PASS;
 
       if (stunUrl) iceServers.push({ urls: stunUrl });
       if (turnUrl) {
