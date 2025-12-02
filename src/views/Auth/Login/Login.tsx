@@ -160,6 +160,7 @@ const Login: React.FC = () => {
                   aria-label="Ingresa tu correo electrónico"
                   aria-required="true"
                   aria-invalid={errors.email ? 'true' : 'false'}
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -186,6 +187,7 @@ const Login: React.FC = () => {
                   aria-label="Ingresa tu contraseña"
                   aria-required="true"
                   aria-invalid={errors.password ? 'true' : 'false'}
+                  autoComplete="current-password"
                 />
               </div>
             </div>
