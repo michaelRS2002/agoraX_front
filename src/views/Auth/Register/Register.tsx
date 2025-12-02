@@ -276,6 +276,7 @@ const Register: React.FC = () => {
                 aria-label="Ingresa tu nombre completo"
                 aria-required="true"
                 aria-invalid={errors.name ? 'true' : 'false'}
+                autoComplete="name"
               />
             </div>
             {errors.name && (
@@ -341,6 +342,7 @@ const Register: React.FC = () => {
                 aria-label="Ingresa tu correo electrónico"
                 aria-required="true"
                 aria-invalid={errors.email ? 'true' : 'false'}
+                autoComplete="email"
               />
             </div>
             {errors.email && (
@@ -394,6 +396,7 @@ const Register: React.FC = () => {
                 aria-label="Ingresa tu contraseña"
                 aria-required="true"
                 aria-invalid={errors.password ? 'true' : 'false'}
+                autoComplete="new-password"
               />
             </div>
             {errors.password && (
@@ -447,6 +450,7 @@ const Register: React.FC = () => {
                 aria-label="Confirma tu contraseña"
                 aria-required="true"
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+                autoComplete="new-password"
               />
             </div>
             {errors.confirmPassword && (

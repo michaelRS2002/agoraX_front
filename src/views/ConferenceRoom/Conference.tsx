@@ -334,7 +334,7 @@ const Conference: React.FC = () => {
             <div className="chat-header"><h3>CHAT</h3></div>
 
             <div className="chat-messages">
-              {messages.map((msg) => (
+              {messages.map(msg => (
                 <div key={msg.id} className="chat-message">
                   <span className="chat-message-user">{msg.user}</span>
                   <p className="chat-message-text">{msg.text}</p>
@@ -378,7 +378,7 @@ const Conference: React.FC = () => {
 
       {showLeaveModal && (
         <div className="modal-overlay" onClick={cancelLeaveCall}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 className="modal-title">¿Salir de la reunión?</h3>
             <div className="modal-actions">
               <button className="modal-btn modal-btn--cancel" onClick={cancelLeaveCall}>
@@ -397,11 +397,3 @@ const Conference: React.FC = () => {
 };
 
 export default Conference;
-
-
-
-
-
-
-
-
