@@ -114,9 +114,38 @@ const Conference: React.FC = () => {
   const getOrCreatePeerConnection = (userId: string) => {
     if (peerConnections.current[userId]) return peerConnections.current[userId];
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: import.meta.env.VITE_STUN_SERVER }]
-    });
+    // Build ICE servers from environment (supports VITE_ICE_SERVERS JSON, STUN and TURN)
+    let iceServers: RTCIceServer[] = [];
+
+    const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
+    if (iceEnv) {
+      try {
+        const parsed = JSON.parse(iceEnv as string) as RTCIceServer[];
+        if (Array.isArray(parsed) && parsed.length) {
+          iceServers = parsed;
+        }
+      } catch (e) {
+        console.warn('Failed to parse VITE_ICE_SERVERS, falling back to individual vars', e);
+      }
+    }
+
+    if (!iceServers.length) {
+      const env = (import.meta as any).env ?? {};
+      const stunUrl = env.VITE_STUN_URL ?? env.VITE_STUN_SERVER;
+      const turnUrl = env.VITE_TURN_URL;
+      const turnUser = env.VITE_TURN_USER;
+      const turnPass = env.VITE_TURN_PASS;
+
+      if (stunUrl) iceServers.push({ urls: stunUrl });
+      if (turnUrl) {
+        const turnServer: RTCIceServer = { urls: turnUrl } as RTCIceServer;
+        if (turnUser) (turnServer as any).username = turnUser;
+        if (turnPass) (turnServer as any).credential = turnPass;
+        iceServers.push(turnServer);
+      }
+    }
+
+    const pc = new RTCPeerConnection({ iceServers });
 
     /** Add track only ONCE */
     if (localStream) {
