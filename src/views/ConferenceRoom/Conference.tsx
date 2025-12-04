@@ -277,7 +277,6 @@ const Conference: React.FC = () => {
           console.log('[client] sending audio chunk', { endpoint, size: ev.data.size, type: ev.data.type });
 
           try {
-            const arrayBuffer = await ev.data.arrayBuffer();
             const resp = await fetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': ev.data.type || 'audio/webm' },
