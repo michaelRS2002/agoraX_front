@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { BiMicrophone, BiMicrophoneOff } from "react-icons/bi";
 import { IoSend } from "react-icons/io5";
-import { RiChat4Line, RiChatOffLine } from "react-icons/ri";
+import { RiChat4Line, RiChatOffLine, RiVideoLine, RiVideoOffLine } from "react-icons/ri";
 import "./Conference.scss";
 
 import { useChatSocket, useAudioSocket } from "../../context/SocketContext";
@@ -35,6 +35,8 @@ const Conference: React.FC = () => {
   const [users, setUsers] = useState<RoomUser[]>([]);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [isCamOn, setIsCamOn] = useState(true);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,6 +75,45 @@ const Conference: React.FC = () => {
   // by the signaling server, or can be called explicitly by the user via a dedicated action.
 };
 
+  /** Camera toggle */
+  const toggleCamera = async () => {
+    if (!localStream) return;
+    let videoTrack = localStream.getVideoTracks()[0];
+
+    // If no video track present, try requesting it
+    if (!videoTrack) {
+      try {
+        const vStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoTrack = vStream.getVideoTracks()[0];
+        if (videoTrack) {
+          localStream.addTrack(videoTrack);
+          // add to existing peer connections once
+          Object.values(peerConnections.current).forEach(pc => {
+            const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "video");
+            if (!alreadyAdded) pc.addTrack(videoTrack!, localStream);
+          });
+          if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+        }
+      } catch (e) {
+        console.error("Error requesting camera:", e);
+        return;
+      }
+    }
+
+    if (!videoTrack) return;
+
+    videoTrack.enabled = !videoTrack.enabled;
+    setIsCamOn(videoTrack.enabled);
+
+    // reflect change in senders
+    Object.values(peerConnections.current).forEach(pc => {
+      pc.getSenders().forEach(sender => {
+        if (sender.track && sender.track.kind === "video") {
+          sender.track.enabled = videoTrack!.enabled;
+        }
+      });
+    });
+  };
 
   /** Chat toggle */
   const toggleChat = () => setIsChatVisible(!isChatVisible);
@@ -154,13 +195,49 @@ const Conference: React.FC = () => {
    * GET USER MEDIA
    * ───────────────────────*/
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => {
+    const initMedia = async () => {
+      try {
+        // Intento conjunto primero
+        const combined = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        setLocalStream(combined);
+        if (localVideoRef.current && combined.getVideoTracks().length > 0) {
+          localVideoRef.current.srcObject = combined;
+        }
+        return;
+      } catch (e) {
+        // Fallback: solicitar por separado y combinar
+        let video: MediaStream | null = null;
+        let audio: MediaStream | null = null;
+        try { video = await navigator.mediaDevices.getUserMedia({ video: true }); } catch {}
+        try { audio = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch {}
+        if (!video && !audio) {
+          console.error("No se pudo acceder ni a cámara ni a micrófono");
+          return;
+        }
+        const stream = new MediaStream();
+        if (video) {
+          const vt = video.getVideoTracks()[0];
+          if (vt) stream.addTrack(vt);
+        }
+        if (audio) {
+          const at = audio.getAudioTracks()[0];
+          if (at) stream.addTrack(at);
+        }
         setLocalStream(stream);
-      })
-      .catch(err => console.error("Error accessing microphone:", err));
+        if (localVideoRef.current && stream.getVideoTracks().length > 0) {
+          localVideoRef.current.srcObject = stream;
+        }
+      }
+    };
+    initMedia();
   }, []);
 
+  // Reasigna el stream al elemento de video cuando cambia el estado de la cámara
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [isCamOn, localStream]);
   /** MEDIARECORDER: capture local mic and send 4s chunks to backend for transcription */
   useEffect(() => {
     if (!localStream) return;
@@ -431,14 +508,19 @@ const Conference: React.FC = () => {
 
     const pc = new RTCPeerConnection({ iceServers });
 
-    /** Add track only ONCE */
+    /** Add tracks only ONCE (audio + video) */
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
+      const videoTrack = localStream.getVideoTracks()[0];
 
-      const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+      const audioAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+      const videoAdded = pc.getSenders().some(s => s.track?.kind === "video");
 
-      if (!alreadyAdded) {
+      if (audioTrack && !audioAdded) {
         pc.addTrack(audioTrack, localStream);
+      }
+      if (videoTrack && !videoAdded) {
+        pc.addTrack(videoTrack, localStream);
       }
     }
 
@@ -628,9 +710,22 @@ const Conference: React.FC = () => {
           <h2 style={{ color: "white", marginTop: "20px" }}>Sala: {roomId}</h2>
 
           <div className="video-grid">
-            <div className="video-tile audio-only">
-              <p style={{ color: "white" }}>{username} (Tú)</p>
-            </div>
+            {isCamOn && localStream?.getVideoTracks().length ? (
+              <div className="video-tile">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ width: '100%', height: '100%', background: '#000', objectFit: 'cover' }}
+                />
+                <p style={{ color: "white" }}>{username} (Tú)</p>
+              </div>
+            ) : (
+              <div className="video-tile audio-only">
+                <p style={{ color: "white" }}>{username} (Tú)</p>
+              </div>
+            )}
 
             {users.map(u => (
               u.socketId !== chatSocket?.id && (   
@@ -677,6 +772,12 @@ const Conference: React.FC = () => {
             onClick={toggleMic}
           >
             {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
+          </button>
+          <button
+            className={`control-btn control-btn--cam ${!isCamOn ? "control-btn--off" : ""}`}
+            onClick={toggleCamera}
+          >
+            {isCamOn ? <RiVideoLine /> : <RiVideoOffLine />}
           </button>
 
           <button className="control-btn control-btn--chat" onClick={toggleChat}>
