@@ -5,7 +5,7 @@ import { IoSend } from "react-icons/io5";
 import { RiChat4Line, RiChatOffLine } from "react-icons/ri";
 import "./Conference.scss";
 
-import { useChatSocket, useAudioSocket } from "../../context/SocketContext";
+import { useChatSocket, useAudioSocket, useVideoSocket } from "../../context/SocketContext";
 
 interface Message {
   id: string;
@@ -25,9 +25,11 @@ const Conference: React.FC = () => {
 
   const chatSocket = useChatSocket();
   const audioSocket = useAudioSocket();
+  const videoSocket = useVideoSocket();
 
   const [isMicOn, setIsMicOn] = useState(true);
   const [isChatVisible, setIsChatVisible] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const [message, setMessage] = useState("");
@@ -35,6 +37,9 @@ const Conference: React.FC = () => {
   const [users, setUsers] = useState<RoomUser[]>([]);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideosRef = useRef<Record<string, HTMLVideoElement>>({});
+  const videoPeerConnections = useRef<Record<string, RTCPeerConnection>>({});
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,14 +156,14 @@ const Conference: React.FC = () => {
   }, [chatSocket, roomId]);
 
   /** ───────────────────────
-   * GET USER MEDIA
+   * GET USER MEDIA (audio + video)
    * ───────────────────────*/
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 640, height: 480 } })
       .then(stream => {
         setLocalStream(stream);
       })
-      .catch(err => console.error("Error accessing microphone:", err));
+      .catch(err => console.error("Error accessing microphone/camera:", err));
   }, []);
 
   /** MEDIARECORDER: capture local mic and send 4s chunks to backend for transcription */
@@ -600,6 +605,244 @@ const Conference: React.FC = () => {
   };
 
   /** ───────────────────────
+   * VIDEO: Get or Create Peer Connection
+   * ───────────────────────*/
+  const getOrCreateVideoPeerConnection = (peerId: string) => {
+    if (videoPeerConnections.current[peerId]) {
+      return videoPeerConnections.current[peerId];
+    }
+
+    // Fetch ICE servers from video server
+    fetch('http://localhost:3000/ice.json')
+      .then(r => r.json())
+      .then(data => {
+        // Update ICE servers if needed (optional)
+        console.log('[video] fetched ICE servers', data.iceServers);
+      })
+      .catch(e => console.warn('[video] failed to fetch ICE servers', e));
+
+    // Build ICE servers from environment
+    let iceServers: RTCIceServer[] = [];
+    const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
+    if (iceEnv) {
+      try {
+        const parsed = JSON.parse(iceEnv as string) as RTCIceServer[];
+        if (Array.isArray(parsed) && parsed.length) {
+          iceServers = parsed;
+        }
+      } catch (e) {
+        console.warn('[video] Failed to parse VITE_ICE_SERVERS', e);
+      }
+    }
+
+    const pc = new RTCPeerConnection({ iceServers });
+
+    // Add local video track
+    if (localStream && isVideoOn) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        const alreadyAdded = pc.getSenders().some(s => s.track?.kind === 'video');
+        if (!alreadyAdded) {
+          pc.addTrack(videoTrack, localStream);
+        }
+      }
+    }
+
+    // Handle incoming video tracks
+    pc.ontrack = (event) => {
+      console.log('[video] ontrack received from', peerId);
+      if (!remoteVideosRef.current[peerId]) {
+        const videoEl = document.createElement('video');
+        videoEl.autoplay = true;
+        videoEl.playsinline = true;
+        videoEl.style.width = '300px';
+        videoEl.style.height = '300px';
+        videoEl.style.margin = '10px';
+        videoEl.style.border = '2px solid #007bff';
+        videoEl.style.borderRadius = '8px';
+        remoteVideosRef.current[peerId] = videoEl;
+
+        // Add to DOM
+        const container = document.getElementById('remoteVideosContainer');
+        if (container) {
+          container.appendChild(videoEl);
+        }
+      }
+      remoteVideosRef.current[peerId].srcObject = event.streams[0];
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        videoSocket?.emit('signal', {
+          roomId,
+          data: {
+            type: 'ice-candidate',
+            candidate: event.candidate,
+            to: peerId
+          }
+        });
+      }
+    };
+
+    videoPeerConnections.current[peerId] = pc;
+    return pc;
+  };
+
+  /** ───────────────────────
+   * VIDEO: Create Offer
+   * ───────────────────────*/
+  const createVideoOffer = async (peerId: string) => {
+    const pc = getOrCreateVideoPeerConnection(peerId);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    videoSocket?.emit('signal', {
+      roomId,
+      data: {
+        type: 'offer',
+        sdp: offer,
+        to: peerId
+      }
+    });
+  };
+
+  /** ───────────────────────
+   * VIDEO: Handle Offer
+   * ───────────────────────*/
+  const handleVideoOffer = async (from: string, sdp: RTCSessionDescriptionInit) => {
+    const pc = getOrCreateVideoPeerConnection(from);
+
+    if (pc.signalingState !== 'stable') {
+      console.warn('[video] offer received while not stable');
+      await pc.setLocalDescription({ type: 'rollback' });
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    videoSocket?.emit('signal', {
+      roomId,
+      data: {
+        type: 'answer',
+        sdp: answer,
+        to: from
+      }
+    });
+  };
+
+  /** ───────────────────────
+   * VIDEO: Handle Answer
+   * ───────────────────────*/
+  const handleVideoAnswer = async (from: string, sdp: RTCSessionDescriptionInit) => {
+    const pc = videoPeerConnections.current[from];
+    if (!pc) return;
+
+    if (pc.signalingState === 'have-local-offer') {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
+  };
+
+  /** ───────────────────────
+   * VIDEO: Handle ICE Candidate
+   * ───────────────────────*/
+  const handleVideoIceCandidate = (from: string, candidate: RTCIceCandidateInit) => {
+    const pc = videoPeerConnections.current[from];
+    if (pc && candidate) {
+      pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => 
+        console.warn('[video] failed to add ICE candidate', e)
+      );
+    }
+  };
+
+  /** ───────────────────────
+   * VIDEO: Handle Video Toggle
+   * ───────────────────────*/
+  useEffect(() => {
+    if (!localStream) return;
+
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    videoTrack.enabled = isVideoOn;
+
+    // Enable/disable video track in all peer connections
+    Object.values(videoPeerConnections.current).forEach(pc => {
+      pc.getSenders().forEach(sender => {
+        if (sender.track && sender.track.kind === 'video') {
+          sender.track.enabled = isVideoOn;
+        }
+      });
+    });
+
+    console.log('[video] toggled to', isVideoOn ? 'ON' : 'OFF');
+  }, [isVideoOn, localStream]);
+
+  /** ───────────────────────
+   * VIDEO: Attach Local Video Track
+   * ───────────────────────*/
+  useEffect(() => {
+    if (!localStream || !localVideoRef.current) return;
+
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  /** ───────────────────────
+   * VIDEO: Video Socket Events
+   * ───────────────────────*/
+  useEffect(() => {
+    if (!videoSocket || !roomId || !localStream) return;
+
+    videoSocket.emit('join', roomId);
+
+    // When a peer joins, create offer to them
+    videoSocket.on('peer-joined', (peerId: string) => {
+      console.log('[video] peer-joined', peerId);
+      createVideoOffer(peerId);
+    });
+
+    // Receive signaling data
+    videoSocket.on('signal', ({ from, data }: { from: string; data: any }) => {
+      console.log('[video] signal received from', from, data.type);
+      
+      if (data.type === 'offer') {
+        handleVideoOffer(from, data.sdp);
+      } else if (data.type === 'answer') {
+        handleVideoAnswer(from, data.sdp);
+      } else if (data.type === 'ice-candidate') {
+        handleVideoIceCandidate(from, data.candidate);
+      }
+    });
+
+    // When a peer leaves
+    videoSocket.on('peer-left', (peerId: string) => {
+      console.log('[video] peer-left', peerId);
+      if (videoPeerConnections.current[peerId]) {
+        videoPeerConnections.current[peerId].close();
+        delete videoPeerConnections.current[peerId];
+      }
+      if (remoteVideosRef.current[peerId]) {
+        remoteVideosRef.current[peerId].remove();
+        delete remoteVideosRef.current[peerId];
+      }
+    });
+
+    return () => {
+      videoSocket.off('peer-joined');
+      videoSocket.off('signal');
+      videoSocket.off('peer-left');
+      try {
+        videoSocket.emit('leave', roomId);
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [videoSocket, roomId, localStream, isVideoOn]);
+
+  /** ───────────────────────
    * CHAT SEND
    * ───────────────────────*/
   const handleSendMessage = () => {
@@ -627,17 +870,22 @@ const Conference: React.FC = () => {
           <h2 style={{ color: "white", marginTop: "20px" }}>Sala: {roomId}</h2>
 
           <div className="video-grid">
-            <div className="video-tile audio-only">
-              <p style={{ color: "white" }}>{username} (Tú)</p>
+            {/* Local Video */}
+            <div className="video-tile">
+              <video 
+                ref={localVideoRef} 
+                autoPlay 
+                muted 
+                playsinline 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <p style={{ color: "white", position: 'absolute', bottom: '10px', left: '10px' }}>
+                {username} (Tú)
+              </p>
             </div>
 
-            {users.map(u => (
-              u.socketId !== chatSocket?.id && (   
-                <div key={u.socketId} className="video-tile audio-only">
-                  <p style={{ color: "white" }}>{u.username}</p>
-                </div>
-              )
-            ))}
+            {/* Remote Videos Container */}
+            <div id="remoteVideosContainer" style={{ display: 'contents' }}></div>
           </div>
         </div>
 
@@ -676,6 +924,14 @@ const Conference: React.FC = () => {
             onClick={toggleMic}
           >
             {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
+          </button>
+
+          <button
+            className={`control-btn control-btn--video ${!isVideoOn ? "control-btn--off" : ""}`}
+            onClick={() => setIsVideoOn(!isVideoOn)}
+            title="Toggle video"
+          >
+            📹
           </button>
 
           <button className="control-btn control-btn--chat" onClick={toggleChat}>
