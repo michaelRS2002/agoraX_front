@@ -26,8 +26,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [audioSocket, setAudioSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const CHAT_URL = import.meta.env.VITE_CHAT_SOCKET_URL;
-    const AUDIO_URL = import.meta.env.VITE_AUDIO_SOCKET_URL;
+    // Allow easy local defaults during development. Prefer explicit VITE_ vars.
+    const CHAT_URL = import.meta.env.VITE_CHAT_SOCKET_URL ?? 'http://localhost:3001';
+    const AUDIO_URL = import.meta.env.VITE_AUDIO_SOCKET_URL ?? 'http://localhost:9000';
 
     /** Chat socket */
     const chat = io(CHAT_URL, {
@@ -41,10 +42,21 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       autoConnect: true,
     });
 
+    console.log('[SocketContext] connecting sockets', { CHAT_URL, AUDIO_URL });
+
+    chat.on('connect', () => console.log('[SocketContext] chat connected', chat.id));
+    chat.on('connect_error', (err: any) => console.error('[SocketContext] chat connect_error', err));
+    audio.on('connect', () => console.log('[SocketContext] audio connected', audio.id));
+    audio.on('connect_error', (err: any) => console.error('[SocketContext] audio connect_error', err));
+
     setChatSocket(chat);
     setAudioSocket(audio);
 
     return () => {
+      chat.off('connect');
+      chat.off('connect_error');
+      audio.off('connect');
+      audio.off('connect_error');
       chat.disconnect();
       audio.disconnect();
     };
@@ -71,6 +83,7 @@ export const useAudioSocket = () => {
   if (!context) throw new Error("useAudioSocket must be used inside <SocketProvider>");
   return context.audioSocket;
 };
+
 
 
 
