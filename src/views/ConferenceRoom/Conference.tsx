@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { BiMicrophone, BiMicrophoneOff } from "react-icons/bi";
 import { IoSend } from "react-icons/io5";
-import { RiChat4Line, RiChatOffLine } from "react-icons/ri";
+import { RiChat4Line, RiChatOffLine, RiVideoLine, RiVideoOffLine } from "react-icons/ri";
 import "./Conference.scss";
 
 import { useChatSocket, useAudioSocket, useVideoSocket } from "../../context/SocketContext";
@@ -78,6 +78,45 @@ const Conference: React.FC = () => {
   // by the signaling server, or can be called explicitly by the user via a dedicated action.
 };
 
+  /** Camera toggle */
+  const toggleCamera = async () => {
+    if (!localStream) return;
+    let videoTrack = localStream.getVideoTracks()[0];
+
+    // If no video track present, try requesting it
+    if (!videoTrack) {
+      try {
+        const vStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoTrack = vStream.getVideoTracks()[0];
+        if (videoTrack) {
+          localStream.addTrack(videoTrack);
+          // add to existing peer connections once
+          Object.values(peerConnections.current).forEach(pc => {
+            const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "video");
+            if (!alreadyAdded) pc.addTrack(videoTrack!, localStream);
+          });
+          if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+        }
+      } catch (e) {
+        console.error("Error requesting camera:", e);
+        return;
+      }
+    }
+
+    if (!videoTrack) return;
+
+    videoTrack.enabled = !videoTrack.enabled;
+    setIsCamOn(videoTrack.enabled);
+
+    // reflect change in senders
+    Object.values(peerConnections.current).forEach(pc => {
+      pc.getSenders().forEach(sender => {
+        if (sender.track && sender.track.kind === "video") {
+          sender.track.enabled = videoTrack!.enabled;
+        }
+      });
+    });
+  };
 
   /** Chat toggle */
   const toggleChat = () => setIsChatVisible(!isChatVisible);
@@ -166,6 +205,12 @@ const Conference: React.FC = () => {
       .catch(err => console.error("Error accessing microphone/camera:", err));
   }, []);
 
+  // Reasigna el stream al elemento de video cuando cambia el estado de la cámara
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [isCamOn, localStream]);
   /** MEDIARECORDER: capture local mic and send 4s chunks to backend for transcription */
   useEffect(() => {
     if (!localStream) return;
@@ -435,14 +480,19 @@ const Conference: React.FC = () => {
 
     const pc = new RTCPeerConnection({ iceServers });
 
-    /** Add track only ONCE */
+    /** Add tracks only ONCE (audio + video) */
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
+      const videoTrack = localStream.getVideoTracks()[0];
 
-      const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+      const audioAdded = pc.getSenders().some(s => s.track?.kind === "audio");
+      const videoAdded = pc.getSenders().some(s => s.track?.kind === "video");
 
-      if (!alreadyAdded) {
+      if (audioTrack && !audioAdded) {
         pc.addTrack(audioTrack, localStream);
+      }
+      if (videoTrack && !videoAdded) {
+        pc.addTrack(videoTrack, localStream);
       }
     }
 
@@ -924,6 +974,12 @@ const Conference: React.FC = () => {
             onClick={toggleMic}
           >
             {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff />}
+          </button>
+          <button
+            className={`control-btn control-btn--cam ${!isCamOn ? "control-btn--off" : ""}`}
+            onClick={toggleCamera}
+          >
+            {isCamOn ? <RiVideoLine /> : <RiVideoOffLine />}
           </button>
 
           <button
