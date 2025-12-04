@@ -37,6 +37,10 @@ const Conference: React.FC = () => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isCamOn, setIsCamOn] = useState(true);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recorderShouldRestartRef = useRef<boolean>(true);
   const remoteAudioRefs = useRef<Record<string, HTMLAudioElement>>({});
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({});
 
@@ -53,8 +57,9 @@ const Conference: React.FC = () => {
   if (!audioTrack) return;
 
   // Cambiar estado local
-  audioTrack.enabled = !audioTrack.enabled;
-  setIsMicOn(audioTrack.enabled);
+  const newEnabled = !audioTrack.enabled;
+  audioTrack.enabled = newEnabled;
+  setIsMicOn(newEnabled);
 
   // Aplicar a TODOS los peer connections 💡
   Object.values(peerConnections.current).forEach(pc => {
@@ -66,6 +71,8 @@ const Conference: React.FC = () => {
   });
 
   console.log("Mic:", audioTrack.enabled ? "ON" : "OFF");
+  // NOTE: do NOT auto-finalize when toggling mic. Finalize is triggered when the room is empty
+  // by the signaling server, or can be called explicitly by the user via a dedicated action.
 };
 
   /** Camera toggle */
@@ -114,7 +121,26 @@ const Conference: React.FC = () => {
   const handleLeaveCall = () => setShowLeaveModal(true);
   const confirmLeaveCall = () => {
     // cleanup audio and peer connections before leaving
+    // Close the leave modal immediately so the UI updates
+    setShowLeaveModal(false);
+
+    // Emit chat leave immediately so the server broadcasts updated room users
+    try {
+      if (chatSocket && roomId) chatSocket.emit("leaveRoom", roomId);
+    } catch (e) {
+      // ignore
+    }
+
+    // cleanup audio and peer connections before leaving (audioSocket leave is inside)
     leaveVoiceRoom();
+
+    // Optimistically remove this client from the local users list so UI reflects the leave
+    try {
+      const mySocketId = chatSocket?.id;
+      if (mySocketId) setUsers(prev => prev.filter(u => u.socketId !== mySocketId));
+    } catch (e) {}
+
+    // Navigate home
     navigate("/home");
   };
   const cancelLeaveCall = () => setShowLeaveModal(false);
@@ -125,7 +151,35 @@ const Conference: React.FC = () => {
   useEffect(() => {
     if (!chatSocket || !roomId) return;
 
-    chatSocket.emit("joinRoom", { roomId, username });
+    const email = user?.email;
+    const userId = user?.id || user?.uid || null;
+
+    chatSocket.emit("joinRoom", { roomId, username, email, userId });
+
+    // Also notify backend to persist participant email for this meeting (so resume can fetch it later)
+    try {
+      const VITE_BACKEND = (import.meta as any).env?.VITE_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL || '';
+      // Normalize backend base: remove trailing slashes and any trailing '/api' to avoid '/api/api' duplication
+      let backendBase = String(VITE_BACKEND || '').replace(/\/+$/,'');
+      backendBase = backendBase.replace(/\/api$/i, '');
+      if (backendBase && email) {
+        const url = `${backendBase}/api/meetings/${encodeURIComponent(roomId || '')}/participants`;
+        // fire-and-forget; backend will idempotently add email if not present
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: String(email).toLowerCase(), userId: userId || undefined, name: username })
+        }).then(async (r) => {
+          if (!r.ok) {
+            console.warn('[client] backend participant POST failed', { status: r.status, url });
+          } else {
+            try { const j = await r.json(); console.log('[client] backend participant POST ok', j); } catch(e) {}
+          }
+        }).catch(e => console.warn('[client] backend participant POST error', e));
+      }
+    } catch (e) {
+      console.warn('[client] failed to notify backend of participant', e);
+    }
 
     chatSocket.on("roomUsers", (users: RoomUser[]) => setUsers(users));
     chatSocket.on("message", (msg) => setMessages(prev => [...prev, msg]));
@@ -184,6 +238,235 @@ const Conference: React.FC = () => {
       localVideoRef.current.srcObject = localStream;
     }
   }, [isCamOn, localStream]);
+  /** MEDIARECORDER: capture local mic and send 4s chunks to backend for transcription */
+  useEffect(() => {
+    if (!localStream) return;
+
+    const mimeType = (() => {
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+      ];
+      for (const t of candidates) {
+        try {
+          if (MediaRecorder.isTypeSupported(t)) return t;
+        } catch (e) {
+          // Some environments may throw on isTypeSupported; ignore and continue
+        }
+      }
+      // If none matched, return empty to let the browser choose a default
+      return '';
+    })();
+
+    // If mic is off, ensure recorder is stopped and do not start
+    if (!isMicOn) {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        try { recorderRef.current.stop(); } catch (e) {}
+      }
+      recorderRef.current = null;
+      return;
+    }
+
+    try {
+      // Ensure recorder will restart after onstop when we (re)create it
+      recorderShouldRestartRef.current = true;
+      // Verify we have an active audio track before creating MediaRecorder
+      const audioTracks = localStream.getAudioTracks();
+      if (!audioTracks || audioTracks.length === 0) {
+        console.warn('[recorder] No audio tracks available on localStream; skipping recorder creation');
+        return;
+      }
+
+      const track = audioTracks[0];
+      if (track.readyState !== 'live') {
+        console.warn('[recorder] Audio track not live', { readyState: track.readyState });
+        // still attempt to create recorder, but log for debugging
+      }
+
+      let mediaRecorder: MediaRecorder | undefined;
+      // Try a few option permutations: prefer specifying both mimeType and audioBitsPerSecond,
+      // then fallback to audioBitsPerSecond only, then mimeType only, then default.
+      const optionsList: Array<MediaRecorderOptions | {}> = [];
+      if (mimeType) optionsList.push({ mimeType, audioBitsPerSecond: 48000 } as MediaRecorderOptions);
+      optionsList.push({ audioBitsPerSecond: 48000 } as MediaRecorderOptions);
+      if (mimeType) optionsList.push({ mimeType } as MediaRecorderOptions);
+      optionsList.push({} as {});
+
+      let lastErr: any = null;
+      for (const opts of optionsList) {
+        try {
+          // Some environments are strict about the options shape; cast to any to be flexible.
+          mediaRecorder = Object.keys(opts as any).length ? new MediaRecorder(localStream as any, opts as any) : new MediaRecorder(localStream as any);
+          console.log('[recorder] MediaRecorder created with options', opts);
+          break;
+        } catch (e) {
+          lastErr = e;
+          console.warn('[recorder] MediaRecorder constructor failed for options', opts, e);
+        }
+      }
+
+      if (!mediaRecorder) {
+        console.error('[recorder] MediaRecorder not available after attempts', lastErr);
+        return;
+      }
+
+      recorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = async (ev: BlobEvent) => {
+        // Do not send when mic has been turned off (safety)
+        if (!isMicOn) return;
+        if (!ev.data || ev.data.size === 0) return;
+
+        // Skip very small blobs which produce Groq "audio too short" errors
+        if (ev.data.size < 4000) {
+          console.warn('[client] skipping tiny audio chunk', { size: ev.data.size });
+          return;
+        }
+
+        try {
+          const arrayBuffer = await ev.data.arrayBuffer();
+          try {
+            const u8 = new Uint8Array(arrayBuffer);
+            const headSlice = Array.from(u8.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            console.log('[client] chunk first 20 bytes (hex):', headSlice);
+            if (u8.length >= 4) {
+              const hasEbml = u8[0] === 0x1a && u8[1] === 0x45 && u8[2] === 0xdf && u8[3] === 0xa3;
+              if (!hasEbml) console.warn('[client] EBML header missing in chunk (may be corrupt)', headSlice.split(' ').slice(0,4).join(' '));
+            }
+            const allZero = u8.slice(0, 8).every(v => v === 0);
+            if (allZero) console.warn('[client] chunk begins with zeros — likely empty or corrupted');
+          } catch (e) {
+            console.warn('[client] failed to inspect chunk bytes', e);
+          }
+          // Support multiple env names; prefer a dedicated resume service if configured
+          const VITE_RESUME = (import.meta as any).env?.VITE_RESUME_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL || '';
+          const base = VITE_RESUME.replace(/\/+$/,'');
+          const query = new URLSearchParams({
+            roomId: roomId || '',
+            userId: username || '',
+          });
+          // include email if available
+          if (user?.email) query.set('email', user.email);
+
+          const endpoint = `${base}/audio/transcribe-chunk?${query.toString()}`;
+          console.log('[client] sending audio chunk', { endpoint, size: ev.data.size, type: ev.data.type });
+
+          try {
+            const arrayBuffer = await ev.data.arrayBuffer();
+            const resp = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': ev.data.type || 'audio/webm' },
+              body: arrayBuffer,
+            });
+
+            try {
+              const text = await resp.text();
+              if (!text) {
+                console.warn('[client] transcribe response empty', { status: resp.status });
+              } else {
+                try {
+                  const json = JSON.parse(text);
+                  console.log('[client] transcribe response', json);
+                } catch (e) {
+                  console.warn('[client] transcribe response not JSON', { status: resp.status, text });
+                }
+              }
+            } catch (e) {
+              console.warn('[client] failed to read transcribe response', e);
+            }
+          } catch (err) {
+            console.warn('Failed to send audio chunk', err);
+          }
+        } catch (err) {
+          console.warn('Failed to send audio chunk', err);
+        }
+      };
+
+      mediaRecorder.onerror = (e) => console.warn('MediaRecorder error', e);
+      mediaRecorder.onstart = () => console.log('[recorder] onstart fired');
+
+      // Start recording using a safer manual interval approach
+      try {
+        // 1) Detén por si acaso (solo si ya está recording)
+        try { if (mediaRecorder.state === 'recording') mediaRecorder.stop(); } catch (_) {}
+
+        // 2) Espera un poco y luego inicia. We'll use onstart to attach interval reliably.
+        // Start recorder with a warm-up and stabilized chunking interval
+        recorderStartTimeoutRef.current = window.setTimeout(() => {
+          console.log("Recorder warming up...");
+
+          try {
+            mediaRecorder.start();
+          } catch (startErr) {
+            console.warn('[recorder] mediaRecorder.start failed', startErr);
+            return;
+          }
+
+              // Wait a short moment after start (700ms) then begin stop/start chunking every 12s
+              recorderStartTimeoutRef.current = window.setTimeout(() => {
+                console.log("Recorder now stable. Starting stop/start chunking...");
+
+                // onstop handler must restart recorder after a small delay to ensure the file is flushed
+                mediaRecorder.onstop = () => {
+                  console.log('[recorder] onstop fired');
+                  try {
+                    if (!isMicOn) {
+                      console.log('[recorder] mic off, not restarting');
+                      return;
+                    }
+                  } catch (e) {}
+
+                  // Only restart if allowed (not unmounting/cleanup)
+                  if (!recorderShouldRestartRef.current) return;
+
+                  setTimeout(() => {
+                    try {
+                      if (mediaRecorder.state === 'inactive') {
+                        mediaRecorder.start();
+                        console.log('[recorder] restarted after stop');
+                      }
+                    } catch (e) {
+                      console.warn('[recorder] restart failed', e);
+                    }
+                  }, 400);
+                };
+
+                // Begin periodic stop calls which finalize chunks safely
+                recorderIntervalRef.current = window.setInterval(() => {
+                  try {
+                    if (mediaRecorder.state === 'recording') {
+                      console.log('[recorder] calling stop() to finalize chunk');
+                      mediaRecorder.stop();
+                    }
+                  } catch (e) {
+                    console.warn('[recorder] stop() failed', e);
+                  }
+                }, 12000) as unknown as ReturnType<typeof setInterval>;
+
+              }, 500) as unknown as ReturnType<typeof setTimeout>;
+
+        }, 3000) as unknown as ReturnType<typeof setTimeout>;
+      } catch (err) {
+        console.warn('Failed to start MediaRecorder', err);
+      }
+
+      return () => {
+        // Prevent onstop from restarting
+        recorderShouldRestartRef.current = false;
+        try {
+          if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        } catch (e) {}
+        if (recorderIntervalRef.current) { clearInterval(recorderIntervalRef.current); recorderIntervalRef.current = null; }
+        if (recorderStartTimeoutRef.current) { clearTimeout(recorderStartTimeoutRef.current); recorderStartTimeoutRef.current = null; }
+        recorderRef.current = null;
+      };
+    } catch (err) {
+      console.warn('MediaRecorder not available or failed:', err);
+    }
+
+  }, [localStream, roomId, username, isMicOn]);
 
   /** ───────────────────────
    * CREATE OR GET PEER
