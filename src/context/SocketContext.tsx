@@ -8,6 +8,7 @@ import { io, Socket } from "socket.io-client";
 interface SocketContextType {
   chatSocket: Socket | null;   // Servidor de chat
   audioSocket: Socket | null;  // Servidor de audio / WebRTC signaling
+  videoSocket: Socket | null;  // Servidor de video / WebRTC video signaling
 }
 
 /** ----------------------------------------------------
@@ -16,6 +17,7 @@ interface SocketContextType {
 const SocketContext = createContext<SocketContextType>({
   chatSocket: null,
   audioSocket: null,
+  videoSocket: null,
 });
 
 /** ----------------------------------------------------
@@ -24,11 +26,13 @@ const SocketContext = createContext<SocketContextType>({
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [chatSocket, setChatSocket] = useState<Socket | null>(null);
   const [audioSocket, setAudioSocket] = useState<Socket | null>(null);
+  const [videoSocket, setVideoSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     // Allow easy local defaults during development. Prefer explicit VITE_ vars.
     const CHAT_URL = import.meta.env.VITE_CHAT_SOCKET_URL ?? 'http://localhost:3001';
     const AUDIO_URL = import.meta.env.VITE_AUDIO_SOCKET_URL ?? 'http://localhost:9000';
+    const VIDEO_URL = import.meta.env.VITE_VIDEO_SOCKET_URL ?? 'http://localhost:3000';
 
     /** Chat socket */
     const chat = io(CHAT_URL, {
@@ -42,28 +46,40 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       autoConnect: true,
     });
 
-    console.log('[SocketContext] connecting sockets', { CHAT_URL, AUDIO_URL });
+    /** Video / WebRTC video signaling socket */
+    const video = io(VIDEO_URL, {
+      transports: ["websocket"],
+      autoConnect: true,
+    });
+
+    console.log('[SocketContext] connecting sockets', { CHAT_URL, AUDIO_URL, VIDEO_URL });
 
     chat.on('connect', () => console.log('[SocketContext] chat connected', chat.id));
     chat.on('connect_error', (err: any) => console.error('[SocketContext] chat connect_error', err));
     audio.on('connect', () => console.log('[SocketContext] audio connected', audio.id));
     audio.on('connect_error', (err: any) => console.error('[SocketContext] audio connect_error', err));
+    video.on('connect', () => console.log('[SocketContext] video connected', video.id));
+    video.on('connect_error', (err: any) => console.error('[SocketContext] video connect_error', err));
 
     setChatSocket(chat);
     setAudioSocket(audio);
+    setVideoSocket(video);
 
     return () => {
       chat.off('connect');
       chat.off('connect_error');
       audio.off('connect');
       audio.off('connect_error');
+      video.off('connect');
+      video.off('connect_error');
       chat.disconnect();
       audio.disconnect();
+      video.disconnect();
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={{ chatSocket, audioSocket }}>
+    <SocketContext.Provider value={{ chatSocket, audioSocket, videoSocket }}>
       {children}
     </SocketContext.Provider>
   );
@@ -82,6 +98,12 @@ export const useAudioSocket = () => {
   const context = useContext(SocketContext);
   if (!context) throw new Error("useAudioSocket must be used inside <SocketProvider>");
   return context.audioSocket;
+};
+
+export const useVideoSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) throw new Error("useVideoSocket must be used inside <SocketProvider>");
+  return context.videoSocket;
 };
 
 
