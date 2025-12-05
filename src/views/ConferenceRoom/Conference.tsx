@@ -30,7 +30,6 @@ const Conference: React.FC = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isChatVisible, setIsChatVisible] = useState(true);
-  const [isVideoOn, setIsVideoOn] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const [message, setMessage] = useState("");
@@ -41,6 +40,7 @@ const Conference: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideosRef = useRef<Record<string, HTMLVideoElement>>({});
   const videoPeerConnections = useRef<Record<string, RTCPeerConnection>>({});
+  const videoPeersSeenRef = useRef<Set<string>>(new Set());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -663,7 +663,7 @@ const Conference: React.FC = () => {
       return videoPeerConnections.current[peerId];
     }
 
-    // Build ICE servers from environment (preferred source)
+    // Build ICE servers from environment
     let iceServers: RTCIceServer[] = [];
     const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
     if (iceEnv) {
@@ -692,7 +692,7 @@ const Conference: React.FC = () => {
     const pc = new RTCPeerConnection({ iceServers });
 
     // Add local video track
-    if (localStream && isVideoOn) {
+    if (localStream && isCamOn) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
         const alreadyAdded = pc.getSenders().some(s => s.track?.kind === 'video');
@@ -705,23 +705,31 @@ const Conference: React.FC = () => {
     // Handle incoming video tracks
     pc.ontrack = (event) => {
       console.log('[video] ontrack received from', peerId);
+
       if (!remoteVideosRef.current[peerId]) {
         const videoEl = document.createElement('video');
         videoEl.autoplay = true;
+        videoEl.muted = false;
         videoEl.playsInline = true;
-        videoEl.style.width = '300px';
-        videoEl.style.height = '300px';
-        videoEl.style.margin = '10px';
+        videoEl.style.width = '100%';
+        videoEl.style.height = '100%';
+        videoEl.style.objectFit = 'cover';
+        videoEl.style.backgroundColor = '#000';
         videoEl.style.border = '2px solid #007bff';
         videoEl.style.borderRadius = '8px';
         remoteVideosRef.current[peerId] = videoEl;
 
-        // Add to DOM
         const container = document.getElementById('remoteVideosContainer');
         if (container) {
-          container.appendChild(videoEl);
+          const wrapper = document.createElement('div');
+          wrapper.className = 'video-tile';
+          wrapper.appendChild(videoEl);
+          container.appendChild(wrapper);
+        } else {
+          console.warn('[video] remoteVideosContainer not found in DOM');
         }
       }
+
       remoteVideosRef.current[peerId].srcObject = event.streams[0];
     };
 
@@ -766,23 +774,32 @@ const Conference: React.FC = () => {
   const handleVideoOffer = async (from: string, sdp: RTCSessionDescriptionInit) => {
     const pc = getOrCreateVideoPeerConnection(from);
 
-    if (pc.signalingState !== 'stable') {
-      console.warn('[video] offer received while not stable');
-      await pc.setLocalDescription({ type: 'rollback' });
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    videoSocket?.emit('signal', {
-      roomId,
-      data: {
-        type: 'answer',
-        sdp: answer,
-        to: from
+    try {
+      // Always reset to stable state before processing new offer
+      if (pc.signalingState !== 'stable') {
+        console.warn('[video] offer received in state', pc.signalingState, '- rolling back');
+        try {
+          await pc.setLocalDescription({ type: 'rollback' });
+        } catch (e) {
+          console.warn('[video] rollback failed', e);
+        }
       }
-    });
+
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      videoSocket?.emit('signal', {
+        roomId,
+        data: {
+          type: 'answer',
+          sdp: answer,
+          to: from
+        }
+      });
+    } catch (e) {
+      console.error('[video] error handling offer', e);
+    }
   };
 
   /** ───────────────────────
@@ -810,7 +827,7 @@ const Conference: React.FC = () => {
   };
 
   /** ───────────────────────
-   * VIDEO: Handle Video Toggle
+   * VIDEO: Handle Video Toggle (sync with isCamOn)
    * ───────────────────────*/
   useEffect(() => {
     if (!localStream) return;
@@ -818,19 +835,19 @@ const Conference: React.FC = () => {
     const videoTrack = localStream.getVideoTracks()[0];
     if (!videoTrack) return;
 
-    videoTrack.enabled = isVideoOn;
+    videoTrack.enabled = isCamOn;
 
     // Enable/disable video track in all peer connections
     Object.values(videoPeerConnections.current).forEach(pc => {
       pc.getSenders().forEach(sender => {
         if (sender.track && sender.track.kind === 'video') {
-          sender.track.enabled = isVideoOn;
+          sender.track.enabled = isCamOn;
         }
       });
     });
 
-    console.log('[video] toggled to', isVideoOn ? 'ON' : 'OFF');
-  }, [isVideoOn, localStream]);
+    console.log('[video] toggled to', isCamOn ? 'ON' : 'OFF');
+  }, [isCamOn, localStream]);
 
   /** ───────────────────────
    * VIDEO: Attach Local Video Track
@@ -852,8 +869,13 @@ const Conference: React.FC = () => {
 
     videoSocket.emit('join', roomId);
 
-    // When a peer joins, create offer to them
+    // When a peer joins, create offer to them (deduplicate)
     videoSocket.on('peer-joined', (peerId: string) => {
+      if (videoPeersSeenRef.current.has(peerId)) {
+        console.log('[video] ignoring duplicate peer-joined', peerId);
+        return;
+      }
+      videoPeersSeenRef.current.add(peerId);
       console.log('[video] peer-joined', peerId);
       createVideoOffer(peerId);
     });
@@ -874,6 +896,7 @@ const Conference: React.FC = () => {
     // When a peer leaves
     videoSocket.on('peer-left', (peerId: string) => {
       console.log('[video] peer-left', peerId);
+      videoPeersSeenRef.current.delete(peerId);
       if (videoPeerConnections.current[peerId]) {
         videoPeerConnections.current[peerId].close();
         delete videoPeerConnections.current[peerId];
@@ -894,7 +917,7 @@ const Conference: React.FC = () => {
         // ignore
       }
     };
-  }, [videoSocket, roomId, localStream, isVideoOn]);
+  }, [videoSocket, roomId, localStream]);
 
   /** ───────────────────────
    * CHAT SEND
@@ -984,14 +1007,6 @@ const Conference: React.FC = () => {
             onClick={toggleCamera}
           >
             {isCamOn ? <RiVideoLine /> : <RiVideoOffLine />}
-          </button>
-
-          <button
-            className={`control-btn control-btn--video ${!isVideoOn ? "control-btn--off" : ""}`}
-            onClick={() => setIsVideoOn(!isVideoOn)}
-            title="Toggle video"
-          >
-            📹
           </button>
 
           <button className="control-btn control-btn--chat" onClick={toggleChat}>
