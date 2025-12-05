@@ -28,6 +28,7 @@ const Conference: React.FC = () => {
   const videoSocket = useVideoSocket();
 
   const [isMicOn, setIsMicOn] = useState(true);
+  const [isCamOn, setIsCamOn] = useState(true);
   const [isChatVisible, setIsChatVisible] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -704,7 +705,7 @@ const Conference: React.FC = () => {
       if (!remoteVideosRef.current[peerId]) {
         const videoEl = document.createElement('video');
         videoEl.autoplay = true;
-        videoEl.playsinline = true;
+        videoEl.playsInline = true;
         videoEl.style.width = '300px';
         videoEl.style.height = '300px';
         videoEl.style.margin = '10px';
@@ -926,7 +927,7 @@ const Conference: React.FC = () => {
                 ref={localVideoRef} 
                 autoPlay 
                 muted 
-                playsinline 
+                playsInline 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <p style={{ color: "white", position: 'absolute', bottom: '10px', left: '10px' }}>
