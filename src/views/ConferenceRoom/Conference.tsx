@@ -663,16 +663,7 @@ const Conference: React.FC = () => {
       return videoPeerConnections.current[peerId];
     }
 
-    // Fetch ICE servers from video server
-    fetch('http://localhost:3000/ice.json')
-      .then(r => r.json())
-      .then(data => {
-        // Update ICE servers if needed (optional)
-        console.log('[video] fetched ICE servers', data.iceServers);
-      })
-      .catch(e => console.warn('[video] failed to fetch ICE servers', e));
-
-    // Build ICE servers from environment
+    // Build ICE servers from environment (preferred source)
     let iceServers: RTCIceServer[] = [];
     const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
     if (iceEnv) {
@@ -680,10 +671,22 @@ const Conference: React.FC = () => {
         const parsed = JSON.parse(iceEnv as string) as RTCIceServer[];
         if (Array.isArray(parsed) && parsed.length) {
           iceServers = parsed;
+          console.log('[video] using ICE servers from VITE_ICE_SERVERS');
         }
       } catch (e) {
         console.warn('[video] Failed to parse VITE_ICE_SERVERS', e);
       }
+    }
+
+    // Optionally try to fetch ICE servers from video server (non-blocking)
+    if (iceServers.length === 0) {
+      const videoServerUrl = (import.meta as any).env?.VITE_VIDEO_SOCKET_URL || 'http://localhost:3000';
+      fetch(`${videoServerUrl}/ice.json`, { signal: AbortSignal.timeout(3000) })
+        .then(r => r.json())
+        .then(data => {
+          console.log('[video] fetched ICE servers from server', data.iceServers);
+        })
+        .catch(e => console.warn('[video] could not fetch ICE servers from server, using defaults', e?.message));
     }
 
     const pc = new RTCPeerConnection({ iceServers });
