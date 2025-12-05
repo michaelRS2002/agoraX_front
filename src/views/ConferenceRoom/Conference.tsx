@@ -41,6 +41,7 @@ const Conference: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideosRef = useRef<Record<string, HTMLVideoElement>>({});
   const videoPeerConnections = useRef<Record<string, RTCPeerConnection>>({});
+  const videoPeersSeenRef = useRef<Set<string>>(new Set());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -663,7 +664,7 @@ const Conference: React.FC = () => {
       return videoPeerConnections.current[peerId];
     }
 
-    // Build ICE servers from environment (preferred source)
+    // Build ICE servers from environment
     let iceServers: RTCIceServer[] = [];
     const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
     if (iceEnv) {
@@ -766,23 +767,32 @@ const Conference: React.FC = () => {
   const handleVideoOffer = async (from: string, sdp: RTCSessionDescriptionInit) => {
     const pc = getOrCreateVideoPeerConnection(from);
 
-    if (pc.signalingState !== 'stable') {
-      console.warn('[video] offer received while not stable');
-      await pc.setLocalDescription({ type: 'rollback' });
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    videoSocket?.emit('signal', {
-      roomId,
-      data: {
-        type: 'answer',
-        sdp: answer,
-        to: from
+    try {
+      // Always reset to stable state before processing new offer
+      if (pc.signalingState !== 'stable') {
+        console.warn('[video] offer received in state', pc.signalingState, '- rolling back');
+        try {
+          await pc.setLocalDescription({ type: 'rollback' });
+        } catch (e) {
+          console.warn('[video] rollback failed', e);
+        }
       }
-    });
+
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      videoSocket?.emit('signal', {
+        roomId,
+        data: {
+          type: 'answer',
+          sdp: answer,
+          to: from
+        }
+      });
+    } catch (e) {
+      console.error('[video] error handling offer', e);
+    }
   };
 
   /** ───────────────────────
@@ -852,8 +862,13 @@ const Conference: React.FC = () => {
 
     videoSocket.emit('join', roomId);
 
-    // When a peer joins, create offer to them
+    // When a peer joins, create offer to them (deduplicate)
     videoSocket.on('peer-joined', (peerId: string) => {
+      if (videoPeersSeenRef.current.has(peerId)) {
+        console.log('[video] ignoring duplicate peer-joined', peerId);
+        return;
+      }
+      videoPeersSeenRef.current.add(peerId);
       console.log('[video] peer-joined', peerId);
       createVideoOffer(peerId);
     });
@@ -874,6 +889,7 @@ const Conference: React.FC = () => {
     // When a peer leaves
     videoSocket.on('peer-left', (peerId: string) => {
       console.log('[video] peer-left', peerId);
+      videoPeersSeenRef.current.delete(peerId);
       if (videoPeerConnections.current[peerId]) {
         videoPeerConnections.current[peerId].close();
         delete videoPeerConnections.current[peerId];
