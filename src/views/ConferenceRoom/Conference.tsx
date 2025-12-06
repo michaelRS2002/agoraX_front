@@ -738,7 +738,7 @@ const Conference: React.FC = () => {
         videoSocket?.emit('signal', {
           roomId,
           data: {
-            type: 'ice-candidate',
+            type: 'candidate',
             candidate: event.candidate,
             to: peerId
           }
@@ -888,7 +888,7 @@ const Conference: React.FC = () => {
         handleVideoOffer(from, data.sdp);
       } else if (data.type === 'answer') {
         handleVideoAnswer(from, data.sdp);
-      } else if (data.type === 'ice-candidate') {
+      } else if (data.type === 'candidate') {
         handleVideoIceCandidate(from, data.candidate);
       }
     });
