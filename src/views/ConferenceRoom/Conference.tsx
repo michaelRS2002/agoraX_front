@@ -47,6 +47,7 @@ const Conference: React.FC = () => {
   const recorderShouldRestartRef = useRef<boolean>(true);
   const remoteAudioRefs = useRef<Record<string, HTMLAudioElement>>({});
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({});
+  const pendingVideoCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const username = user?.name || user?.email?.split("@")[0] || "Usuario";
@@ -786,6 +787,18 @@ const Conference: React.FC = () => {
       }
 
       await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+      const queued = pendingVideoCandidates.current[from];
+      if (queued && queued.length) {
+        for (const c of queued) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          } catch (e) {
+            console.warn('[video] failed to add queued ICE candidate', e);
+          }
+        }
+        delete pendingVideoCandidates.current[from];
+      }
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
@@ -811,6 +824,18 @@ const Conference: React.FC = () => {
 
     if (pc.signalingState === 'have-local-offer') {
       await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+      const queued = pendingVideoCandidates.current[from];
+      if (queued && queued.length) {
+        for (const c of queued) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          } catch (e) {
+            console.warn('[video] failed to add queued ICE candidate', e);
+          }
+        }
+        delete pendingVideoCandidates.current[from];
+      }
     }
   };
 
@@ -819,11 +844,19 @@ const Conference: React.FC = () => {
    * ───────────────────────*/
   const handleVideoIceCandidate = (from: string, candidate: RTCIceCandidateInit) => {
     const pc = videoPeerConnections.current[from];
-    if (pc && candidate) {
-      pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => 
-        console.warn('[video] failed to add ICE candidate', e)
-      );
+    if (!pc || !candidate) return;
+
+    if (!pc.remoteDescription) {
+      if (!pendingVideoCandidates.current[from]) {
+        pendingVideoCandidates.current[from] = [];
+      }
+      pendingVideoCandidates.current[from].push(candidate);
+      return;
     }
+
+    pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => 
+      console.warn('[video] failed to add ICE candidate', e)
+    );
   };
 
   /** ───────────────────────
