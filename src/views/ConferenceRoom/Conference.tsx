@@ -910,7 +910,14 @@ const Conference: React.FC = () => {
       }
       videoPeersSeenRef.current.add(peerId);
       console.log('[video] peer-joined', peerId);
-      createVideoOffer(peerId);
+
+      // Prevent glare: Only the peer with the larger ID creates the offer
+      if (videoSocket.id && videoSocket.id > peerId) {
+        console.log('[video] creating offer to', peerId, '(I am initiator)');
+        createVideoOffer(peerId);
+      } else {
+        console.log('[video] waiting for offer from', peerId, '(I am polite)');
+      }
     });
 
     // Receive signaling data
