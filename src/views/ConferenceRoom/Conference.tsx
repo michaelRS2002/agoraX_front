@@ -935,7 +935,10 @@ const Conference: React.FC = () => {
         delete videoPeerConnections.current[peerId];
       }
       if (remoteVideosRef.current[peerId]) {
-        remoteVideosRef.current[peerId].remove();
+        const videoEl = remoteVideosRef.current[peerId];
+        const wrapper = videoEl.closest('.video-tile');
+        if (wrapper) wrapper.remove();
+        else videoEl.remove();
         delete remoteVideosRef.current[peerId];
       }
     });
@@ -949,6 +952,23 @@ const Conference: React.FC = () => {
       } catch (e) {
         // ignore
       }
+      
+      // Cleanup video peer connections on effect re-run (e.g. when localStream changes)
+      Object.keys(videoPeerConnections.current).forEach(peerId => {
+        try {
+          videoPeerConnections.current[peerId].close();
+        } catch (e) {}
+        delete videoPeerConnections.current[peerId];
+        
+        if (remoteVideosRef.current[peerId]) {
+          const videoEl = remoteVideosRef.current[peerId];
+          const wrapper = videoEl.closest('.video-tile');
+          if (wrapper) wrapper.remove();
+          else videoEl.remove();
+          delete remoteVideosRef.current[peerId];
+        }
+      });
+      videoPeersSeenRef.current.clear();
     };
   }, [videoSocket, roomId, localStream]);
 
