@@ -278,11 +278,11 @@ const Conference: React.FC = () => {
         try {
           // Some environments are strict about the options shape; cast to any to be flexible.
           mediaRecorder = Object.keys(opts as any).length ? new MediaRecorder(recorderStream as any, opts as any) : new MediaRecorder(recorderStream as any);
-          console.log('[recorder] MediaRecorder created with options', opts);
+          // console.log('[recorder] MediaRecorder created with options', opts);
           break;
         } catch (e) {
           lastErr = e;
-          console.warn('[recorder] MediaRecorder constructor failed for options', opts, e);
+          // console.warn('[recorder] MediaRecorder constructor failed for options', opts, e);
         }
       }
 
@@ -300,7 +300,7 @@ const Conference: React.FC = () => {
 
         // Skip very small blobs which produce Groq "audio too short" errors
         if (ev.data.size < 4000) {
-          console.warn('[client] skipping tiny audio chunk', { size: ev.data.size });
+          // console.warn('[client] skipping tiny audio chunk', { size: ev.data.size });
           return;
         }
 
@@ -309,7 +309,7 @@ const Conference: React.FC = () => {
           try {
             const u8 = new Uint8Array(arrayBuffer);
             const headSlice = Array.from(u8.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-            console.log('[client] chunk first 20 bytes (hex):', headSlice);
+            // console.log('[client] chunk first 20 bytes (hex):', headSlice);
             if (u8.length >= 4) {
               const hasEbml = u8[0] === 0x1a && u8[1] === 0x45 && u8[2] === 0xdf && u8[3] === 0xa3;
               if (!hasEbml) console.warn('[client] EBML header missing in chunk (may be corrupt)', headSlice.split(' ').slice(0,4).join(' '));
@@ -317,7 +317,7 @@ const Conference: React.FC = () => {
             const allZero = u8.slice(0, 8).every(v => v === 0);
             if (allZero) console.warn('[client] chunk begins with zeros — likely empty or corrupted');
           } catch (e) {
-            console.warn('[client] failed to inspect chunk bytes', e);
+            // console.warn('[client] failed to inspect chunk bytes', e);
           }
           // Support multiple env names; prefer a dedicated resume service if configured
           const VITE_RESUME = (import.meta as any).env?.VITE_RESUME_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL || '';
@@ -330,7 +330,7 @@ const Conference: React.FC = () => {
           if (user?.email) query.set('email', user.email);
 
           const endpoint = `${base}/audio/transcribe-chunk?${query.toString()}`;
-          console.log('[client] sending audio chunk', { endpoint, size: ev.data.size, type: ev.data.type });
+          // console.log('[client] sending audio chunk', { endpoint, size: ev.data.size, type: ev.data.type });
 
           try {
             const resp = await fetch(endpoint, {
@@ -342,28 +342,28 @@ const Conference: React.FC = () => {
             try {
               const text = await resp.text();
               if (!text) {
-                console.warn('[client] transcribe response empty', { status: resp.status });
+                // console.warn('[client] transcribe response empty', { status: resp.status });
               } else {
                 try {
                   const json = JSON.parse(text);
-                  console.log('[client] transcribe response', json);
+                  // console.log('[client] transcribe response', json);
                 } catch (e) {
-                  console.warn('[client] transcribe response not JSON', { status: resp.status, text });
+                  // console.warn('[client] transcribe response not JSON', { status: resp.status, text });
                 }
               }
             } catch (e) {
-              console.warn('[client] failed to read transcribe response', e);
+              // console.warn('[client] failed to read transcribe response', e);
             }
           } catch (err) {
-            console.warn('Failed to send audio chunk', err);
+            // console.warn('Failed to send audio chunk', err);
           }
         } catch (err) {
-          console.warn('Failed to send audio chunk', err);
+          // console.warn('Failed to send audio chunk', err);
         }
       };
 
       mediaRecorder.onerror = (e) => console.warn('MediaRecorder error', e);
-      mediaRecorder.onstart = () => console.log('[recorder] onstart fired');
+      // mediaRecorder.onstart = () => console.log('[recorder] onstart fired');
 
       // Start recording using a safer manual interval approach
       try {
@@ -373,7 +373,7 @@ const Conference: React.FC = () => {
         // 2) Espera un poco y luego inicia. We'll use onstart to attach interval reliably.
         // Start recorder with a warm-up and stabilized chunking interval
         recorderStartTimeoutRef.current = window.setTimeout(() => {
-          console.log("Recorder warming up...");
+          // console.log("Recorder warming up...");
 
           try {
             mediaRecorder.start();
@@ -384,14 +384,14 @@ const Conference: React.FC = () => {
 
               // Wait a short moment after start (700ms) then begin stop/start chunking every 12s
               recorderStartTimeoutRef.current = window.setTimeout(() => {
-                console.log("Recorder now stable. Starting stop/start chunking...");
+                // console.log("Recorder now stable. Starting stop/start chunking...");
 
                 // onstop handler must restart recorder after a small delay to ensure the file is flushed
                 mediaRecorder.onstop = () => {
-                  console.log('[recorder] onstop fired');
+                  // console.log('[recorder] onstop fired');
                   try {
                     if (!isMicOn) {
-                      console.log('[recorder] mic off, not restarting');
+                      // console.log('[recorder] mic off, not restarting');
                       return;
                     }
                   } catch (e) {}
@@ -403,10 +403,10 @@ const Conference: React.FC = () => {
                     try {
                       if (mediaRecorder.state === 'inactive') {
                         mediaRecorder.start();
-                        console.log('[recorder] restarted after stop');
+                        // console.log('[recorder] restarted after stop');
                       }
                     } catch (e) {
-                      console.warn('[recorder] restart failed', e);
+                      // console.warn('[recorder] restart failed', e);
                     }
                   }, 400);
                 };
@@ -415,11 +415,11 @@ const Conference: React.FC = () => {
                 recorderIntervalRef.current = window.setInterval(() => {
                   try {
                     if (mediaRecorder.state === 'recording') {
-                      console.log('[recorder] calling stop() to finalize chunk');
+                      // console.log('[recorder] calling stop() to finalize chunk');
                       mediaRecorder.stop();
                     }
                   } catch (e) {
-                    console.warn('[recorder] stop() failed', e);
+                    // console.warn('[recorder] stop() failed', e);
                   }
                 }, 12000) as unknown as ReturnType<typeof setInterval>;
 
