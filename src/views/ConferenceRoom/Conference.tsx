@@ -260,6 +260,10 @@ const Conference: React.FC = () => {
         // still attempt to create recorder, but log for debugging
       }
 
+      // Create a dedicated audio-only stream for the recorder to avoid NotSupportedError
+      // when using audio-only mimeTypes with a stream that also has video.
+      const recorderStream = new MediaStream([track]);
+
       let mediaRecorder: MediaRecorder | undefined;
       // Try a few option permutations: prefer specifying both mimeType and audioBitsPerSecond,
       // then fallback to audioBitsPerSecond only, then mimeType only, then default.
@@ -273,7 +277,7 @@ const Conference: React.FC = () => {
       for (const opts of optionsList) {
         try {
           // Some environments are strict about the options shape; cast to any to be flexible.
-          mediaRecorder = Object.keys(opts as any).length ? new MediaRecorder(localStream as any, opts as any) : new MediaRecorder(localStream as any);
+          mediaRecorder = Object.keys(opts as any).length ? new MediaRecorder(recorderStream as any, opts as any) : new MediaRecorder(recorderStream as any);
           console.log('[recorder] MediaRecorder created with options', opts);
           break;
         } catch (e) {
