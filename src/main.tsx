@@ -31,6 +31,7 @@ import EditUser from './views/User/Edit-user/Edit-user'
 import DeleteUser from './views/User/Delete-user/Delete-user'
 import ChangePassword from './views/User/Change-password/Change-password'
 import SiteMap from './views/SiteMap/SiteMap'
+import UserManual from './views/UserManual/UserManual'
 import { NotFound } from './views/NotFound'
 import Landing from './views/Landing/Landing'
 import Conference from './views/ConferenceRoom/Conference'
@@ -66,6 +67,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/home" element={<Home />} />
           <Route path="/site-map" element={<SiteMap />} />
+          <Route path="/manual-usuario" element={<UserManual />} />
 
           {/* Rutas de conferencia */}
           <Route path="/conference" element={<Conference />} />

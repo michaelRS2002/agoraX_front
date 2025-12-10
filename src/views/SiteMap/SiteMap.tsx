@@ -48,6 +48,9 @@ const SiteMap: React.FC = () => {
               <li>
                 <Link to="/home">Inicio</Link>
               </li>
+              <li>
+                <Link to="/manual-usuario">Manual de Usuario</Link>
+              </li>
             </ul>
           </div>
 
@@ -66,13 +69,13 @@ const SiteMap: React.FC = () => {
                 <Link to="/user">Mi Perfil</Link>
               </li>
               <li>
-                <Link to="/user/edit">Editar Perfil</Link>
+                <Link to="/edit-user">Editar Perfil</Link>
               </li>
               <li>
-                <Link to="/user/change-password">Cambiar Contraseña</Link>
+                <Link to="/change-password">Cambiar Contraseña</Link>
               </li>
               <li>
-                <Link to="/user/delete">Eliminar Cuenta</Link>
+                <Link to="/delete-user">Eliminar Cuenta</Link>
               </li>
             </ul>
           </div>

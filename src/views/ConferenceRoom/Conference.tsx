@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { BiMicrophone, BiMicrophoneOff } from "react-icons/bi";
 import { IoSend } from "react-icons/io5";
-import { RiChat4Line, RiChatOffLine, RiVideoLine, RiVideoOffLine } from "react-icons/ri";
+import { RiChat4Line, RiChatOffLine, RiVideoOnLine, RiVideoOffLine } from "react-icons/ri";
 import "./Conference.scss";
 
 import { useChatSocket, useAudioSocket, useVideoSocket } from "../../context/SocketContext";
+import useAuthStore from "../../stores/useAuthStore";
 
 interface Message {
   id: string;
@@ -18,6 +19,39 @@ interface RoomUser {
   socketId: string;
   username: string;
 }
+
+interface PeerMetadata {
+  username: string;
+  isMicOn: boolean;
+}
+
+const VideoTile: React.FC<{ stream: MediaStream; username: string; isMicOn: boolean; isLocal?: boolean }> = ({ stream, username, isMicOn, isLocal }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <div className="video-tile">
+      <video
+        ref={videoRef}
+        autoPlay
+        muted={isLocal} // Mute local video to prevent feedback
+        playsInline
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+      <div className="video-tile-overlay">
+        <span className="video-tile-name">{username} {isLocal && '(Tú)'}</span>
+        <span className="video-tile-icon">
+          {isMicOn ? <BiMicrophone /> : <BiMicrophoneOff color="red" />}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const Conference: React.FC = () => {
   const navigate = useNavigate();
@@ -37,10 +71,15 @@ const Conference: React.FC = () => {
   const [users, setUsers] = useState<RoomUser[]>([]);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideosRef = useRef<Record<string, HTMLVideoElement>>({});
+  
+  // State for remote streams and metadata
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
+  const [peerMetadata, setPeerMetadata] = useState<Record<string, PeerMetadata>>({});
+
   const videoPeerConnections = useRef<Record<string, RTCPeerConnection>>({});
   const videoPeersSeenRef = useRef<Set<string>>(new Set());
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,36 +88,70 @@ const Conference: React.FC = () => {
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({});
   const pendingVideoCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const username = user?.name || user?.email?.split("@")[0] || "Usuario";
+  const { user: authUser } = useAuthStore();
+  const user = authUser || JSON.parse(localStorage.getItem("user") || "{}");
+  
+  const rawName = user?.name || user?.displayName || user?.email?.split("@")[0] || "Usuario";
+  // Shorten name to First + Last (max 2 words) for better display
+  const username = rawName.trim().split(/\s+/).slice(0, 2).join(" ");
+
+  // Refs for socket callbacks to access latest state
+  const usernameRef = useRef(username);
+  const isMicOnRef = useRef(isMicOn);
+
+  useEffect(() => { usernameRef.current = username; }, [username]);
+  useEffect(() => { isMicOnRef.current = isMicOn; }, [isMicOn]);
+
+  // Broadcast updated user info whenever username changes (e.g. after auth loads)
+  useEffect(() => {
+    if (videoSocket && roomId && username && username !== "Usuario") {
+      videoSocket.emit('signal', {
+        roomId,
+        data: {
+          type: 'user-info',
+          username,
+          isMicOn: isMicOnRef.current
+        }
+      });
+    }
+  }, [username, videoSocket, roomId]);
 
   /** ───────────────────────
    *  MIC TOGGLE FIX
    * ───────────────────────*/
   const toggleMic = () => {
-  if (!localStream) return;
+    if (!localStream) return;
 
-  const audioTrack = localStream.getAudioTracks()[0];
-  if (!audioTrack) return;
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) return;
 
-  // Cambiar estado local
-  const newEnabled = !audioTrack.enabled;
-  audioTrack.enabled = newEnabled;
-  setIsMicOn(newEnabled);
+    // Cambiar estado local
+    const newEnabled = !audioTrack.enabled;
+    audioTrack.enabled = newEnabled;
+    setIsMicOn(newEnabled);
 
-  // Aplicar a TODOS los peer connections 💡
-  Object.values(peerConnections.current).forEach(pc => {
-    pc.getSenders().forEach(sender => {
-      if (sender.track && sender.track.kind === "audio") {
-        sender.track.enabled = audioTrack.enabled;
-      }
+    // Aplicar a TODOS los peer connections 💡
+    Object.values(peerConnections.current).forEach(pc => {
+      pc.getSenders().forEach(sender => {
+        if (sender.track && sender.track.kind === "audio") {
+          sender.track.enabled = audioTrack.enabled;
+        }
+      });
     });
-  });
 
-  console.log("Mic:", audioTrack.enabled ? "ON" : "OFF");
-  // NOTE: do NOT auto-finalize when toggling mic. Finalize is triggered when the room is empty
-  // by the signaling server, or can be called explicitly by the user via a dedicated action.
-};
+    // Broadcast mic status change
+    if (videoSocket && roomId) {
+      videoSocket.emit('signal', {
+        roomId,
+        data: {
+          type: 'mic-toggled',
+          isMicOn: newEnabled
+        }
+      });
+    }
+
+    console.log("Mic:", audioTrack.enabled ? "ON" : "OFF");
+  };
 
   /** Camera toggle */
   const toggleCamera = async () => {
@@ -97,7 +170,7 @@ const Conference: React.FC = () => {
             const alreadyAdded = pc.getSenders().some(s => s.track?.kind === "video");
             if (!alreadyAdded) pc.addTrack(videoTrack!, localStream);
           });
-          if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+          // Local video update handled by state/props now
         }
       } catch (e) {
         console.error("Error requesting camera:", e);
@@ -125,27 +198,19 @@ const Conference: React.FC = () => {
 
   const handleLeaveCall = () => setShowLeaveModal(true);
   const confirmLeaveCall = () => {
-    // cleanup audio and peer connections before leaving
-    // Close the leave modal immediately so the UI updates
     setShowLeaveModal(false);
 
-    // Emit chat leave immediately so the server broadcasts updated room users
     try {
       if (chatSocket && roomId) chatSocket.emit("leaveRoom", roomId);
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
-    // cleanup audio and peer connections before leaving (audioSocket leave is inside)
     leaveVoiceRoom();
 
-    // Optimistically remove this client from the local users list so UI reflects the leave
     try {
       const mySocketId = chatSocket?.id;
       if (mySocketId) setUsers(prev => prev.filter(u => u.socketId !== mySocketId));
     } catch (e) {}
 
-    // Navigate home
     navigate("/home");
   };
   const cancelLeaveCall = () => setShowLeaveModal(false);
@@ -161,15 +226,12 @@ const Conference: React.FC = () => {
 
     chatSocket.emit("joinRoom", { roomId, username, email, userId });
 
-    // Also notify backend to persist participant email for this meeting (so resume can fetch it later)
     try {
       const VITE_BACKEND = (import.meta as any).env?.VITE_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL || '';
-      // Normalize backend base: remove trailing slashes and any trailing '/api' to avoid '/api/api' duplication
       let backendBase = String(VITE_BACKEND || '').replace(/\/+$/,'');
       backendBase = backendBase.replace(/\/api$/i, '');
       if (backendBase && email) {
         const url = `${backendBase}/api/meetings/${encodeURIComponent(roomId || '')}/participants`;
-        // fire-and-forget; backend will idempotently add email if not present
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -194,25 +256,20 @@ const Conference: React.FC = () => {
       chatSocket.off("roomUsers");
       chatSocket.off("message");
     };
-  }, [chatSocket, roomId]);
+  }, [chatSocket, roomId, username, user?.email, user?.id]);
 
   /** ───────────────────────
    * GET USER MEDIA (audio + video)
    * ───────────────────────*/
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 640, height: 480 } })
+    // Eliminamos width/height fijos para permitir la resolución nativa (mejor para móviles)
+    navigator.mediaDevices.getUserMedia({ audio: true, video: true })
       .then(stream => {
         setLocalStream(stream);
       })
       .catch(err => console.error("Error accessing microphone/camera:", err));
   }, []);
 
-  // Reasigna el stream al elemento de video cuando cambia el estado de la cámara
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [isCamOn, localStream]);
   /** MEDIARECORDER: capture local mic and send 4s chunks to backend for transcription */
   useEffect(() => {
     if (!localStream) return;
@@ -227,15 +284,11 @@ const Conference: React.FC = () => {
       for (const t of candidates) {
         try {
           if (MediaRecorder.isTypeSupported(t)) return t;
-        } catch (e) {
-          // Some environments may throw on isTypeSupported; ignore and continue
-        }
+        } catch (e) {}
       }
-      // If none matched, return empty to let the browser choose a default
       return '';
     })();
 
-    // If mic is off, ensure recorder is stopped and do not start
     if (!isMicOn) {
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
         try { recorderRef.current.stop(); } catch (e) {}
@@ -245,9 +298,7 @@ const Conference: React.FC = () => {
     }
 
     try {
-      // Ensure recorder will restart after onstop when we (re)create it
       recorderShouldRestartRef.current = true;
-      // Verify we have an active audio track before creating MediaRecorder
       const audioTracks = localStream.getAudioTracks();
       if (!audioTracks || audioTracks.length === 0) {
         console.warn('[recorder] No audio tracks available on localStream; skipping recorder creation');
@@ -257,16 +308,11 @@ const Conference: React.FC = () => {
       const track = audioTracks[0];
       if (track.readyState !== 'live') {
         console.warn('[recorder] Audio track not live', { readyState: track.readyState });
-        // still attempt to create recorder, but log for debugging
       }
 
-      // Create a dedicated audio-only stream for the recorder to avoid NotSupportedError
-      // when using audio-only mimeTypes with a stream that also has video.
       const recorderStream = new MediaStream([track]);
 
       let mediaRecorder: MediaRecorder | undefined;
-      // Try a few option permutations: prefer specifying both mimeType and audioBitsPerSecond,
-      // then fallback to audioBitsPerSecond only, then mimeType only, then default.
       const optionsList: Array<MediaRecorderOptions | {}> = [];
       if (mimeType) optionsList.push({ mimeType, audioBitsPerSecond: 48000 } as MediaRecorderOptions);
       optionsList.push({ audioBitsPerSecond: 48000 } as MediaRecorderOptions);
@@ -276,13 +322,10 @@ const Conference: React.FC = () => {
       let lastErr: any = null;
       for (const opts of optionsList) {
         try {
-          // Some environments are strict about the options shape; cast to any to be flexible.
           mediaRecorder = Object.keys(opts as any).length ? new MediaRecorder(recorderStream as any, opts as any) : new MediaRecorder(recorderStream as any);
-          // console.log('[recorder] MediaRecorder created with options', opts);
           break;
         } catch (e) {
           lastErr = e;
-          // console.warn('[recorder] MediaRecorder constructor failed for options', opts, e);
         }
       }
 
@@ -294,87 +337,41 @@ const Conference: React.FC = () => {
       recorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = async (ev: BlobEvent) => {
-        // Do not send when mic has been turned off (safety)
         if (!isMicOn) return;
         if (!ev.data || ev.data.size === 0) return;
 
-        // Skip very small blobs which produce Groq "audio too short" errors
         if (ev.data.size < 4000) {
-          // console.warn('[client] skipping tiny audio chunk', { size: ev.data.size });
           return;
         }
 
         try {
           const arrayBuffer = await ev.data.arrayBuffer();
-          try {
-            const u8 = new Uint8Array(arrayBuffer);
-            const headSlice = Array.from(u8.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-            // console.log('[client] chunk first 20 bytes (hex):', headSlice);
-            if (u8.length >= 4) {
-              const hasEbml = u8[0] === 0x1a && u8[1] === 0x45 && u8[2] === 0xdf && u8[3] === 0xa3;
-              if (!hasEbml) console.warn('[client] EBML header missing in chunk (may be corrupt)', headSlice.split(' ').slice(0,4).join(' '));
-            }
-            const allZero = u8.slice(0, 8).every(v => v === 0);
-            if (allZero) console.warn('[client] chunk begins with zeros — likely empty or corrupted');
-          } catch (e) {
-            // console.warn('[client] failed to inspect chunk bytes', e);
-          }
-          // Support multiple env names; prefer a dedicated resume service if configured
           const VITE_RESUME = (import.meta as any).env?.VITE_RESUME_API_BASE || (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL || '';
           const base = VITE_RESUME.replace(/\/+$/,'');
           const query = new URLSearchParams({
             roomId: roomId || '',
             userId: username || '',
           });
-          // include email if available
           if (user?.email) query.set('email', user.email);
 
           const endpoint = `${base}/audio/transcribe-chunk?${query.toString()}`;
-          // console.log('[client] sending audio chunk', { endpoint, size: ev.data.size, type: ev.data.type });
 
           try {
-            const resp = await fetch(endpoint, {
+            await fetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': ev.data.type || 'audio/webm' },
               body: arrayBuffer,
             });
-
-            try {
-              const text = await resp.text();
-              if (!text) {
-                // console.warn('[client] transcribe response empty', { status: resp.status });
-              } else {
-                try {
-                  const json = JSON.parse(text);
-                  // console.log('[client] transcribe response', json);
-                } catch (e) {
-                  // console.warn('[client] transcribe response not JSON', { status: resp.status, text });
-                }
-              }
-            } catch (e) {
-              // console.warn('[client] failed to read transcribe response', e);
-            }
-          } catch (err) {
-            // console.warn('Failed to send audio chunk', err);
-          }
-        } catch (err) {
-          // console.warn('Failed to send audio chunk', err);
-        }
+          } catch (err) {}
+        } catch (err) {}
       };
 
       mediaRecorder.onerror = (e) => console.warn('MediaRecorder error', e);
-      // mediaRecorder.onstart = () => console.log('[recorder] onstart fired');
 
-      // Start recording using a safer manual interval approach
       try {
-        // 1) Detén por si acaso (solo si ya está recording)
         try { if (mediaRecorder.state === 'recording') mediaRecorder.stop(); } catch (_) {}
 
-        // 2) Espera un poco y luego inicia. We'll use onstart to attach interval reliably.
-        // Start recorder with a warm-up and stabilized chunking interval
         recorderStartTimeoutRef.current = window.setTimeout(() => {
-          // console.log("Recorder warming up...");
-
           try {
             mediaRecorder.start();
           } catch (startErr) {
@@ -382,45 +379,31 @@ const Conference: React.FC = () => {
             return;
           }
 
-              // Wait a short moment after start (700ms) then begin stop/start chunking every 12s
               recorderStartTimeoutRef.current = window.setTimeout(() => {
-                // console.log("Recorder now stable. Starting stop/start chunking...");
-
-                // onstop handler must restart recorder after a small delay to ensure the file is flushed
                 mediaRecorder.onstop = () => {
-                  // console.log('[recorder] onstop fired');
                   try {
                     if (!isMicOn) {
-                      // console.log('[recorder] mic off, not restarting');
                       return;
                     }
                   } catch (e) {}
 
-                  // Only restart if allowed (not unmounting/cleanup)
                   if (!recorderShouldRestartRef.current) return;
 
                   setTimeout(() => {
                     try {
                       if (mediaRecorder.state === 'inactive') {
                         mediaRecorder.start();
-                        // console.log('[recorder] restarted after stop');
                       }
-                    } catch (e) {
-                      // console.warn('[recorder] restart failed', e);
-                    }
+                    } catch (e) {}
                   }, 400);
                 };
 
-                // Begin periodic stop calls which finalize chunks safely
                 recorderIntervalRef.current = window.setInterval(() => {
                   try {
                     if (mediaRecorder.state === 'recording') {
-                      // console.log('[recorder] calling stop() to finalize chunk');
                       mediaRecorder.stop();
                     }
-                  } catch (e) {
-                    // console.warn('[recorder] stop() failed', e);
-                  }
+                  } catch (e) {}
                 }, 12000) as unknown as ReturnType<typeof setInterval>;
 
               }, 500) as unknown as ReturnType<typeof setTimeout>;
@@ -431,7 +414,6 @@ const Conference: React.FC = () => {
       }
 
       return () => {
-        // Prevent onstop from restarting
         recorderShouldRestartRef.current = false;
         try {
           if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
@@ -448,12 +430,10 @@ const Conference: React.FC = () => {
 
   /** ───────────────────────
    * CREATE OR GET PEER
-   * (fix: avoid duplicates & mute breaking)
    * ───────────────────────*/
   const getOrCreatePeerConnection = (userId: string) => {
     if (peerConnections.current[userId]) return peerConnections.current[userId];
 
-    // Build ICE servers from environment (supports VITE_ICE_SERVERS JSON, STUN and TURN)
     let iceServers: RTCIceServer[] = [];
 
     const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
@@ -486,7 +466,6 @@ const Conference: React.FC = () => {
 
     const pc = new RTCPeerConnection({ iceServers });
 
-    /** Add tracks only ONCE (audio + video) */
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
       const videoTrack = localStream.getVideoTracks()[0];
@@ -538,7 +517,6 @@ const Conference: React.FC = () => {
 
   /** ───────────────────────
    * RECEIVE OFFER
-   * (Fix: avoid double setRemoteDescription)
    * ───────────────────────*/
   const handleReceiveOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
     const pc = getOrCreatePeerConnection(from);
@@ -611,13 +589,9 @@ const Conference: React.FC = () => {
       audioSocket.off("voice-answer");
       audioSocket.off("ice-candidate");
       audioSocket.off("user-left");
-      // Emit leave and cleanup on unmount
       try {
         audioSocket.emit("leave-voice-room", roomId);
-      } catch (e) {
-        // ignore
-      }
-      // Close peer connections and stop tracks
+      } catch (e) {}
       Object.values(peerConnections.current).forEach(pc => {
         try { pc.close(); } catch (e) {}
       });
@@ -627,7 +601,6 @@ const Conference: React.FC = () => {
           try { t.stop(); } catch (e) {}
         });
       }
-      // cleanup remote audio elements
       Object.values(remoteAudioRefs.current).forEach(a => {
         try { a.pause(); a.srcObject = null; } catch (e) {}
       });
@@ -638,7 +611,6 @@ const Conference: React.FC = () => {
 
   /**
    * Cleanup helper to leave voice room and free resources.
-   * Called when user explicitly leaves or component unmounts.
    */
   const leaveVoiceRoom = () => {
     if (audioSocket && roomId) {
@@ -668,7 +640,6 @@ const Conference: React.FC = () => {
       return videoPeerConnections.current[peerId];
     }
 
-    // Build ICE servers from environment
     let iceServers: RTCIceServer[] = [];
     const iceEnv = (import.meta as any).env?.VITE_ICE_SERVERS;
     if (iceEnv) {
@@ -683,7 +654,6 @@ const Conference: React.FC = () => {
       }
     }
 
-    // Optionally try to fetch ICE servers from video server (non-blocking)
     if (iceServers.length === 0) {
       const videoServerUrl = (import.meta as any).env?.VITE_VIDEO_SOCKET_URL || 'http://localhost:3000';
       fetch(`${videoServerUrl}/ice.json`, { signal: AbortSignal.timeout(3000) })
@@ -696,7 +666,6 @@ const Conference: React.FC = () => {
 
     const pc = new RTCPeerConnection({ iceServers });
 
-    // Add local video track
     if (localStream && isCamOn) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
@@ -707,35 +676,24 @@ const Conference: React.FC = () => {
       }
     }
 
-    // Handle incoming video tracks
     pc.ontrack = (event) => {
       console.log('[video] ontrack received from', peerId);
+      // Update state instead of DOM
+      setRemoteStreams(prev => ({
+        ...prev,
+        [peerId]: event.streams[0]
+      }));
 
-      if (!remoteVideosRef.current[peerId]) {
-        const videoEl = document.createElement('video');
-        videoEl.autoplay = true;
-        videoEl.muted = false;
-        videoEl.playsInline = true;
-        videoEl.style.width = '100%';
-        videoEl.style.height = '100%';
-        videoEl.style.objectFit = 'cover';
-        videoEl.style.backgroundColor = '#000';
-        videoEl.style.border = '2px solid #007bff';
-        videoEl.style.borderRadius = '8px';
-        remoteVideosRef.current[peerId] = videoEl;
-
-        const container = document.getElementById('remoteVideosContainer');
-        if (container) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'video-tile';
-          wrapper.appendChild(videoEl);
-          container.appendChild(wrapper);
-        } else {
-          console.warn('[video] remoteVideosContainer not found in DOM');
-        }
+      // If we don't have metadata for this peer yet, request it
+      if (!peerMetadata[peerId]) {
+        videoSocket?.emit('signal', {
+          roomId,
+          data: {
+            type: 'request-user-info',
+            to: peerId
+          }
+        });
       }
-
-      remoteVideosRef.current[peerId].srcObject = event.streams[0];
     };
 
     pc.onicecandidate = (event) => {
@@ -780,7 +738,6 @@ const Conference: React.FC = () => {
     const pc = getOrCreateVideoPeerConnection(from);
 
     try {
-      // Always reset to stable state before processing new offer
       if (pc.signalingState !== 'stable') {
         console.warn('[video] offer received in state', pc.signalingState, '- rolling back');
         try {
@@ -874,7 +831,6 @@ const Conference: React.FC = () => {
 
     videoTrack.enabled = isCamOn;
 
-    // Enable/disable video track in all peer connections
     Object.values(videoPeerConnections.current).forEach(pc => {
       pc.getSenders().forEach(sender => {
         if (sender.track && sender.track.kind === 'video') {
@@ -887,18 +843,6 @@ const Conference: React.FC = () => {
   }, [isCamOn, localStream]);
 
   /** ───────────────────────
-   * VIDEO: Attach Local Video Track
-   * ───────────────────────*/
-  useEffect(() => {
-    if (!localStream || !localVideoRef.current) return;
-
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
-
-  /** ───────────────────────
    * VIDEO: Video Socket Events
    * ───────────────────────*/
   useEffect(() => {
@@ -906,7 +850,18 @@ const Conference: React.FC = () => {
 
     videoSocket.emit('join', roomId);
 
-    // When a peer joins, create offer to them (deduplicate)
+    // Broadcast my info when I join
+    // Note: We use refs here to get the current value at the moment of joining,
+    // but the separate useEffect above handles updates if username changes later.
+    videoSocket.emit('signal', {
+      roomId,
+      data: {
+        type: 'user-info',
+        username: usernameRef.current,
+        isMicOn: isMicOnRef.current
+      }
+    });
+
     videoSocket.on('peer-joined', (peerId: string) => {
       if (videoPeersSeenRef.current.has(peerId)) {
         console.log('[video] ignoring duplicate peer-joined', peerId);
@@ -915,16 +870,34 @@ const Conference: React.FC = () => {
       videoPeersSeenRef.current.add(peerId);
       console.log('[video] peer-joined', peerId);
 
-      // Prevent glare: Only the peer with the larger ID creates the offer
+      // Send my info to the new peer
+      videoSocket.emit('signal', {
+        roomId,
+        data: {
+          type: 'user-info',
+          username: usernameRef.current,
+          isMicOn: isMicOnRef.current,
+          to: peerId
+        }
+      });
+
       if (videoSocket.id && videoSocket.id > peerId) {
         console.log('[video] creating offer to', peerId, '(I am initiator)');
         createVideoOffer(peerId);
       } else {
         console.log('[video] waiting for offer from', peerId, '(I am polite)');
       }
+
+      // Request their info as well (handshake)
+      videoSocket.emit('signal', {
+        roomId,
+        data: {
+          type: 'request-user-info',
+          to: peerId
+        }
+      });
     });
 
-    // Receive signaling data
     videoSocket.on('signal', ({ from, data }: { from: string; data: any }) => {
       console.log('[video] signal received from', from, data.type);
       
@@ -934,10 +907,36 @@ const Conference: React.FC = () => {
         handleVideoAnswer(from, data.sdp);
       } else if (data.type === 'candidate') {
         handleVideoIceCandidate(from, data.candidate);
+      } else if (data.type === 'user-info') {
+        setPeerMetadata(prev => ({
+          ...prev,
+          [from]: {
+            username: data.username,
+            isMicOn: data.isMicOn
+          }
+        }));
+      } else if (data.type === 'request-user-info') {
+        // Reply with my info
+        videoSocket.emit('signal', {
+          roomId,
+          data: {
+            type: 'user-info',
+            username: usernameRef.current,
+            isMicOn: isMicOnRef.current,
+            to: from
+          }
+        });
+      } else if (data.type === 'mic-toggled') {
+        setPeerMetadata(prev => ({
+          ...prev,
+          [from]: {
+            ...(prev[from] || { username: 'Usuario' }),
+            isMicOn: data.isMicOn
+          }
+        }));
       }
     });
 
-    // When a peer leaves
     videoSocket.on('peer-left', (peerId: string) => {
       console.log('[video] peer-left', peerId);
       videoPeersSeenRef.current.delete(peerId);
@@ -945,13 +944,18 @@ const Conference: React.FC = () => {
         videoPeerConnections.current[peerId].close();
         delete videoPeerConnections.current[peerId];
       }
-      if (remoteVideosRef.current[peerId]) {
-        const videoEl = remoteVideosRef.current[peerId];
-        const wrapper = videoEl.closest('.video-tile');
-        if (wrapper) wrapper.remove();
-        else videoEl.remove();
-        delete remoteVideosRef.current[peerId];
-      }
+      
+      // Remove from state
+      setRemoteStreams(prev => {
+        const next = { ...prev };
+        delete next[peerId];
+        return next;
+      });
+      setPeerMetadata(prev => {
+        const next = { ...prev };
+        delete next[peerId];
+        return next;
+      });
     });
 
     return () => {
@@ -960,28 +964,37 @@ const Conference: React.FC = () => {
       videoSocket.off('peer-left');
       try {
         videoSocket.emit('leave', roomId);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
       
-      // Cleanup video peer connections on effect re-run (e.g. when localStream changes)
       Object.keys(videoPeerConnections.current).forEach(peerId => {
         try {
           videoPeerConnections.current[peerId].close();
         } catch (e) {}
         delete videoPeerConnections.current[peerId];
-        
-        if (remoteVideosRef.current[peerId]) {
-          const videoEl = remoteVideosRef.current[peerId];
-          const wrapper = videoEl.closest('.video-tile');
-          if (wrapper) wrapper.remove();
-          else videoEl.remove();
-          delete remoteVideosRef.current[peerId];
-        }
       });
       videoPeersSeenRef.current.clear();
+      setRemoteStreams({});
+      setPeerMetadata({});
     };
   }, [videoSocket, roomId, localStream]);
+
+  /** ───────────────────────
+   * CHAT SCROLL LOGIC
+   * ───────────────────────*/
+  const handleChatScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // Si la distancia al fondo es menor a 50px, consideramos que está "abajo" y activamos autoscroll
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      shouldAutoScrollRef.current = isAtBottom;
+    }
+  };
+
+  useEffect(() => {
+    if (isChatVisible && shouldAutoScrollRef.current && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isChatVisible]);
 
   /** ───────────────────────
    * CHAT SEND
@@ -1012,21 +1025,25 @@ const Conference: React.FC = () => {
 
           <div className="video-grid">
             {/* Local Video */}
-            <div className="video-tile">
-              <video 
-                ref={localVideoRef} 
-                autoPlay 
-                muted 
-                playsInline 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            {localStream && (
+              <VideoTile 
+                stream={localStream} 
+                username={username} 
+                isMicOn={isMicOn} 
+                isLocal={true} 
               />
-              <p style={{ color: "white", position: 'absolute', bottom: '10px', left: '10px' }}>
-                {username} (Tú)
-              </p>
-            </div>
+            )}
 
-            {/* Remote Videos Container */}
-            <div id="remoteVideosContainer" style={{ display: 'contents' }}></div>
+            {/* Remote Videos */}
+            {Object.entries(remoteStreams).map(([peerId, stream]) => (
+              <VideoTile
+                key={peerId}
+                stream={stream}
+                username={peerMetadata[peerId]?.username || 'Usuario'}
+                isMicOn={peerMetadata[peerId]?.isMicOn ?? true} // Default to true if unknown
+                isLocal={false}
+              />
+            ))}
           </div>
         </div>
 
@@ -1034,7 +1051,7 @@ const Conference: React.FC = () => {
           <div className="conference-chat">
             <div className="chat-header"><h3>CHAT</h3></div>
 
-            <div className="chat-messages">
+            <div className="chat-messages" ref={chatContainerRef} onScroll={handleChatScroll}>
               {messages.map(msg => (
                 <div key={msg.id} className="chat-message">
                   <span className="chat-message-user">{msg.user}</span>
@@ -1070,7 +1087,7 @@ const Conference: React.FC = () => {
             className={`control-btn control-btn--cam ${!isCamOn ? "control-btn--off" : ""}`}
             onClick={toggleCamera}
           >
-            {isCamOn ? <RiVideoLine /> : <RiVideoOffLine />}
+            {isCamOn ? <RiVideoOnLine /> : <RiVideoOffLine />}
           </button>
 
           <button className="control-btn control-btn--chat" onClick={toggleChat}>
