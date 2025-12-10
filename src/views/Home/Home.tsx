@@ -88,6 +88,7 @@ const Home: React.FC = () => {
           <div className="footer-column">
             <ul role="list" aria-label="Enlaces de cuenta">
               <li><a href="/site-map" aria-label="Ir al mapa del sitio">Mapa del sitio</a></li>
+              <li><a href="/manual-usuario" aria-label="Ver el manual de usuario">Manual de Usuario</a></li>
               <li><a href="/register" aria-label="Crear una cuenta nueva">Registrarse</a></li>
               <li><a href="/login" aria-label="Iniciar sesión en tu cuenta">Iniciar sesión</a></li>
             </ul>
@@ -96,7 +97,7 @@ const Home: React.FC = () => {
           <div className="footer-column">
             <ul role="list" aria-label="Enlaces de funciones">
               <li><a href="/conference" aria-label="Iniciar una videollamada">Videollamada</a></li>
-              <li><a href="/perfil" aria-label="Ver tu perfil">Perfil</a></li>
+              <li><a href="/user" aria-label="Ver tu perfil">Perfil</a></li>
             </ul>
           </div>
         </div>

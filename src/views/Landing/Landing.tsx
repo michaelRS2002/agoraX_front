@@ -63,7 +63,7 @@ const Landing: React.FC = () => {
 
             <div className="landing-footer">
               <p className="landing-footer-text">
-                ¿Necesitas ayuda? <a href="/site-map" className="landing-footer-link" aria-label="Ver información del sitio">Más información</a>
+                ¿Necesitas ayuda? <a href="/manual-usuario" className="landing-footer-link" aria-label="Ver manual de usuario">Manual de Usuario</a> | <a href="/site-map" className="landing-footer-link" aria-label="Ver información del sitio">Más información</a>
               </p>
             </div>
           </div>
